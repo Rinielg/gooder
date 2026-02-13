@@ -20,6 +20,14 @@ export async function POST(request: NextRequest) {
       profileId?: string;
     };
 
+    // Require a brand profile for content generation
+    if (!profileId) {
+      return new Response(
+        JSON.stringify({ error: "A brand profile must be selected before generating content." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     // Auth check
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -65,11 +73,30 @@ export async function POST(request: NextRequest) {
       { data: standards },
       { data: objectives },
       { data: definitions },
+      { data: trainingDocs },
     ] = await Promise.all([
       supabase.from("platform_standards").select("*").eq("workspace_id", workspaceId).eq("is_active", true),
       supabase.from("objectives").select("*").eq("workspace_id", workspaceId).eq("is_active", true),
       supabase.from("definitions").select("*").eq("workspace_id", workspaceId),
+      profileId
+        ? supabase
+            .from("training_documents")
+            .select("file_name, extracted_content")
+            .eq("brand_profile_id", profileId)
+            .eq("processing_status", "complete")
+        : Promise.resolve({ data: null }),
     ]);
+
+    // Build training context from uploaded documents
+    let trainingContext: string | undefined;
+    if (trainingDocs?.length) {
+      const docTexts = trainingDocs.map((doc: any) => {
+        const text = doc.extracted_content?.text || "";
+        const truncated = text.length > 2000 ? text.slice(0, 2000) + "..." : text;
+        return `[Source: ${doc.file_name}]\n${truncated}`;
+      });
+      trainingContext = docTexts.join("\n\n---\n\n");
+    }
 
     // Extract last user message text for model selection
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
@@ -104,6 +131,7 @@ export async function POST(request: NextRequest) {
       objectives: (objectives || []) as Objective[],
       definitions: (definitions || []) as Definition[],
       figmaContext,
+      trainingContext,
     });
 
     // Convert UIMessages to the format streamText expects

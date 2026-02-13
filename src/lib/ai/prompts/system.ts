@@ -16,12 +16,14 @@ export function buildSystemPrompt({
   objectives,
   definitions,
   figmaContext,
+  trainingContext,
 }: {
   profile: BrandProfile | null;
   standards: PlatformStandard[];
   objectives: Objective[];
   definitions: Definition[];
   figmaContext?: string;
+  trainingContext?: string;
 }): string {
   const sections: string[] = [];
 
@@ -113,6 +115,11 @@ CRITICAL RULES:
 
     if (pd.channel_adaptation) {
       sections.push(`\n## CHANNEL ADAPTATION (Layer 6)\n${JSON.stringify(pd.channel_adaptation, null, 2)}`);
+    }
+
+    // Training document excerpts
+    if (trainingContext) {
+      sections.push(`\n## RAW TRAINING MATERIALS\nThe following are excerpts from the brand's source documents. Use these as additional context for voice and tone decisions:\n<user_training_materials>\n${trainingContext}\n</user_training_materials>`);
     }
   } else {
     sections.push("\n--- NO BRAND PROFILE ACTIVE ---\nGenerate content using general best practices. Recommend the user sets up a brand profile for consistent results.");
@@ -211,11 +218,32 @@ For every content generation, structure your response as:
 export function buildAdherencePrompt({
   profile,
   generatedContent,
+  contentType,
+  standards,
+  objectives,
+  definitions,
 }: {
   profile: BrandProfile;
   generatedContent: string;
+  contentType?: string;
+  standards?: PlatformStandard[];
+  objectives?: Objective[];
+  definitions?: Definition[];
 }): string {
-  return `You are the Brand Voice Adherence Agent. Your ONLY job is to score generated content against the brand voice profile.
+  const standardsBlock =
+    standards && standards.length > 0
+      ? `\n## PLATFORM STANDARDS\n${JSON.stringify(standards, null, 2)}`
+      : "";
+  const objectivesBlock =
+    objectives && objectives.length > 0
+      ? `\n## ACTIVE OBJECTIVES\n${JSON.stringify(objectives, null, 2)}`
+      : "";
+  const definitionsBlock =
+    definitions && definitions.length > 0
+      ? `\n## TERMINOLOGY DEFINITIONS\n${JSON.stringify(definitions, null, 2)}`
+      : "";
+
+  return `You are the Brand Voice Adherence Agent. Your ONLY job is to score generated content against the brand voice profile, standards, objectives, and terminology definitions.
 
 You are independent from the Output Agent. You may disagree with its self-score.
 
@@ -224,6 +252,10 @@ ${JSON.stringify(profile.profile_data, null, 2)}
 
 ## ACTIVE MODULES
 ${profile.active_modules.join(", ") || "None"}
+${standardsBlock}${objectivesBlock}${definitionsBlock}
+
+## CONTENT TYPE
+${contentType || "general"}
 
 ## CONTENT TO EVALUATE
 <content_to_evaluate>
@@ -231,45 +263,42 @@ ${generatedContent}
 </content_to_evaluate>
 
 ## SCORING DIMENSIONS (weights)
-1. Voice Alignment (0.20): Do the voice pillars come through? Are anti-patterns absent?
-2. Tone Match (0.15): Does tone match the situation and gradient?
-3. Tier Compliance (0.15): Does register/familiarity match the target tier?
-4. Terminology (0.10): Are canonical terms used? Deprecated terms absent?
-5. Readability (0.10): Sentence length, active voice, plain language?
-6. Channel Compliance (0.05): Length and format within channel constraints?
-7. Lifecycle Fit (0.10): Does language match the user's relationship stage?
-8. Module Compliance (0.15): All disclosures present? No prohibited language?
+Score each dimension 0–10. Provide per-dimension flags and notes.
+
+1. voice_consistency (0.20): Do the brand voice pillars come through consistently? Are anti-patterns absent? Does it sound like the brand?
+2. tone_accuracy (0.15): Does the tone match the intended situation, emotional gradient, and audience tier?
+3. compliance (0.20): All required disclosures present? No prohibited language? Governance rules followed? Module requirements met?
+4. terminology (0.10): Are canonical terms used correctly? Deprecated terms absent? Definitions followed?
+5. platform_optimization (0.10): Does length, format, and structure match the content type and channel constraints?
+6. objective_alignment (0.10): Does the content serve the active business objectives?
+7. pattern_adherence (0.05): Does the content follow established content patterns (structures, frameworks, templates)?
+8. overall_quality (0.10): Readability, clarity, grammar, active voice, sentence variety, professionalism.
 
 ## SEVERITY RULES
-- Compliance violation = AUTOMATIC FAIL (score 0, overall fails)
-- Vulnerability violation = AUTOMATIC FLAG for review
-- Missing disclosure = AUTOMATIC FAIL
+- CRITICAL: compliance score < 7 = AUTOMATIC FAIL regardless of overall score
+- Missing required disclosure = AUTOMATIC FAIL
+- Prohibited language used = AUTOMATIC FAIL
+- Vulnerability exploitation = AUTOMATIC FLAG for review
 
 ## OUTPUT FORMAT (JSON only)
-Respond with ONLY valid JSON matching this schema:
+Respond with ONLY valid JSON matching this exact schema:
 {
-  "overall_score": number,
-  "pass": boolean,
-  "dimension_scores": {
-    "voice_alignment": number,
-    "tone_match": number,
-    "tier_compliance": number | null,
-    "terminology_consistency": number,
-    "readability_compliance": number,
-    "channel_compliance": number,
-    "lifecycle_appropriateness": number,
-    "module_compliance": number
+  "scores": {
+    "voice_consistency": { "score": number, "weight": 0.20, "flags": [], "notes": "" },
+    "tone_accuracy": { "score": number, "weight": 0.15, "flags": [], "notes": "" },
+    "compliance": { "score": number, "weight": 0.20, "flags": [], "notes": "" },
+    "terminology": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
+    "platform_optimization": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
+    "objective_alignment": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
+    "pattern_adherence": { "score": number, "weight": 0.05, "flags": [], "notes": "" },
+    "overall_quality": { "score": number, "weight": 0.10, "flags": [], "notes": "" }
   },
-  "flags": [
-    {
-      "dimension": "string",
-      "severity": "info|warning|fail|automatic_fail",
-      "issue": "string",
-      "suggestion": "string"
-    }
-  ],
-  "confidence": "low|medium|high"
-}`;
+  "suggestions": ["actionable improvement suggestion"]
+}
+
+Each flag in a dimension's flags array: { "dimension": "string", "severity": "info|warning|fail|automatic_fail", "issue": "string", "suggestion": "string" }
+
+IMPORTANT: Do NOT include overall_score or pass in your response. Those are calculated server-side from your dimension scores.`;
 }
 
 /**

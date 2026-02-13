@@ -64,6 +64,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } else {
       localStorage.removeItem("bvp_active_profile");
     }
+    // Notify child pages (e.g., chat) that the profile changed
+    window.dispatchEvent(
+      new CustomEvent("bvp-profile-change", { detail: { profileId: id || null } })
+    );
   }
 
   // Restore active profile from localStorage on mount

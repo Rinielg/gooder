@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { analyzeDocument } from "@/lib/training/analyze";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -39,13 +40,13 @@ async function extractText(
   // ── PDF ───────────────────────────────────────────────────────────
   if (ext === ".pdf" || mimeType === "application/pdf") {
     try {
-      const { extractText: extractPdfText } = await import("unpdf");
+      const { getDocumentProxy, extractText: extractPdfText } = await import("unpdf");
       const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-      const result = await extractPdfText(uint8);
+      const pdf = await getDocumentProxy(uint8);
+      const result = await extractPdfText(pdf, { mergePages: true });
+      await pdf.destroy();
 
-      const text = Array.isArray(result.text)
-        ? result.text.join("\n")
-        : String(result.text || "");
+      const text = result.text;
       if (text.trim().length === 0) {
         throw new Error(
           "PDF appears to be image-based (scanned). Text extraction returned empty. Please upload a text-based PDF or convert to .txt first."
@@ -294,6 +295,28 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", docRecord.id);
 
+    // ── AI Analysis — extract brand attributes ────────────────────
+    let analysisResult: {
+      completeness?: number;
+      fields_populated?: string[];
+      gaps?: string[];
+      confidence?: string;
+    } = {};
+
+    try {
+      analysisResult = await analyzeDocument({
+        documentId: docRecord.id,
+        profileId,
+        workspaceId: membership.workspace_id,
+        extractedText: truncatedForStorage,
+        fileName: file.name,
+        serviceClient,
+      });
+    } catch (err: any) {
+      // Analysis failure is non-fatal — the document is already saved
+      console.error("Post-upload analysis error:", err.message);
+    }
+
     return NextResponse.json({
       success: true,
       document: {
@@ -304,8 +327,13 @@ export async function POST(request: NextRequest) {
         word_count: wordCount,
         char_count: extractedText.length,
         extraction_method: extractionMethod,
-        // Send a preview (first 500 chars) — not the full text
         preview: extractedText.slice(0, 500) + (extractedText.length > 500 ? "..." : ""),
+      },
+      analysis: {
+        completeness: analysisResult.completeness ?? null,
+        fields_populated: analysisResult.fields_populated ?? [],
+        gaps: analysisResult.gaps ?? [],
+        confidence: analysisResult.confidence ?? null,
       },
     });
   } catch (error: any) {

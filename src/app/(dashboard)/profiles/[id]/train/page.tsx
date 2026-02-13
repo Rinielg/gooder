@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/components/ui/shared";
 import {
   Send, Loader2, Bot, User, ArrowLeft, Upload, FileText,
-  GraduationCap, CheckCircle2, X, Check, AlertCircle,
+  GraduationCap, CheckCircle2, X, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { BrandProfile, BrandProfileData } from "@/types";
+import type { BrandProfile } from "@/types";
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".md", ".txt"];
 const ACCEPTED_MIME_TYPES = [
@@ -23,66 +23,30 @@ const ACCEPTED_MIME_TYPES = [
   "text/plain",
 ];
 
-type UploadStatus = "idle" | "uploading" | "processing" | "review" | "error";
+type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error";
 
-interface ExtractedField {
-  key: string;
-  label: string;
-  confidence: string;
-  accepted: boolean | null; // null = pending review
+interface UploadResult {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  word_count: number;
+  char_count: number;
+  extraction_method: string;
   preview: string;
 }
 
-interface UploadResult {
-  documentId: string;
-  summary: string;
-  confidence: Record<string, string>;
-  fieldsPopulated: string[];
-  completeness: number;
+interface AnalysisResult {
+  completeness: number | null;
+  fields_populated: string[];
+  gaps: string[];
+  confidence: string | null;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  voice_identity: "Voice Identity",
-  "voice_identity.pillars": "Voice Pillars",
-  "voice_identity.archetype": "Brand Archetype",
-  "voice_identity.spectrum": "Voice Spectrum",
-  tone_architecture: "Tone Architecture",
-  grammar_style: "Grammar & Style",
-  content_patterns: "Content Patterns",
-  lifecycle_language: "Lifecycle Language",
-  channel_adaptation: "Channel Adaptation",
-  governance: "Governance",
-};
-
-function fieldLabel(key: string): string {
-  return FIELD_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function previewValue(data: BrandProfileData, key: string): string {
-  const val = (data as any)[key];
-  if (!val) return "No data";
-  if (key === "voice_identity") {
-    const parts: string[] = [];
-    if (val.pillars?.length) parts.push(`${val.pillars.length} pillar(s)`);
-    if (val.archetype?.primary) parts.push(`Archetype: ${val.archetype.primary}`);
-    if (val.spectrum) parts.push("Spectrum defined");
-    return parts.join(", ") || "Partial data";
-  }
-  if (key === "tone_architecture") {
-    const tones = val.situational_tone_map?.length ?? 0;
-    return tones > 0 ? `${tones} situational tone(s)` : "Tone rules defined";
-  }
-  if (key === "grammar_style") {
-    const entries = Object.entries(val)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`);
-    return entries.slice(0, 3).join(", ") || "Style rules defined";
-  }
-  if (typeof val === "object") {
-    const count = Array.isArray(val) ? val.length : Object.keys(val).length;
-    return `${count} item(s)`;
-  }
-  return String(val);
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function TrainProfilePage() {
@@ -100,10 +64,8 @@ export default function TrainProfilePage() {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [extractedFields, setExtractedFields] = useState<ExtractedField[]>([]);
-  const [extractedData, setExtractedData] = useState<Partial<BrandProfileData> | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [savingReview, setSavingReview] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -171,8 +133,7 @@ export default function TrainProfilePage() {
     setUploadStatus("uploading");
     setUploadError(null);
     setUploadResult(null);
-    setExtractedFields([]);
-    setExtractedData(null);
+    setAnalysisResult(null);
 
     try {
       const formData = new FormData();
@@ -192,40 +153,21 @@ export default function TrainProfilePage() {
         throw new Error(data.error || "Upload failed");
       }
 
-      const result = data as UploadResult;
-      setUploadResult(result);
-
-      // Reload profile to get the merged data from the server
-      const { data: freshProfile } = await supabase
-        .from("brand_profiles")
-        .select("*")
-        .eq("id", profileId)
-        .single();
-
-      if (freshProfile) {
-        const prev = profile?.profile_data || {};
-        const merged = (freshProfile as BrandProfile).profile_data || {};
-
-        // Build extractedData by diffing what's new
-        const newData: Partial<BrandProfileData> = {};
-        for (const key of result.fieldsPopulated) {
-          (newData as any)[key] = (merged as any)[key];
-        }
-        setExtractedData(newData);
-
-        // Build review fields
-        const fields: ExtractedField[] = result.fieldsPopulated.map((key) => ({
-          key,
-          label: fieldLabel(key),
-          confidence: result.confidence?.[key] || result.confidence?.[`voice_identity.${key}`] || "medium",
-          accepted: null,
-          preview: previewValue(merged as BrandProfileData, key),
-        }));
-
-        setExtractedFields(fields);
-        setProfile(freshProfile as BrandProfile);
-        setUploadStatus("review");
+      setUploadResult(data.document as UploadResult);
+      if (data.analysis) {
+        setAnalysisResult(data.analysis as AnalysisResult);
       }
+      setUploadStatus("success");
+
+      // Reload profile to reflect updated completeness and profile_data
+      await loadProfile();
+
+      const fieldsCount = data.analysis?.fields_populated?.length || 0;
+      toast.success(
+        fieldsCount > 0
+          ? `Document processed — ${fieldsCount} attribute(s) extracted`
+          : `Document uploaded and stored`
+      );
     } catch (err: any) {
       setUploadError(err.message || "Upload failed");
       setUploadStatus("error");
@@ -246,88 +188,6 @@ export default function TrainProfilePage() {
     e.target.value = "";
   }
 
-  function setFieldAccepted(key: string, accepted: boolean) {
-    setExtractedFields((prev) =>
-      prev.map((f) => (f.key === key ? { ...f, accepted } : f))
-    );
-  }
-
-  function acceptAll() {
-    setExtractedFields((prev) => prev.map((f) => ({ ...f, accepted: true })));
-  }
-
-  function rejectAll() {
-    setExtractedFields((prev) => prev.map((f) => ({ ...f, accepted: false })));
-  }
-
-  async function saveReview() {
-    if (!profile || !extractedData) return;
-    setSavingReview(true);
-
-    const accepted = extractedFields.filter((f) => f.accepted === true);
-    const rejected = extractedFields.filter((f) => f.accepted === false);
-
-    if (accepted.length === 0 && rejected.length > 0) {
-      // All rejected — revert to pre-upload profile_data
-      // The upload already merged data, so we need to remove rejected fields
-      const revertedData = { ...(profile.profile_data || {}) } as Record<string, any>;
-      for (const field of rejected) {
-        delete revertedData[field.key];
-      }
-
-      const { error } = await supabase
-        .from("brand_profiles")
-        .update({
-          profile_data: revertedData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", profileId);
-
-      if (error) {
-        toast.error("Failed to save changes");
-        setSavingReview(false);
-        return;
-      }
-
-      toast.success("All extracted attributes rejected");
-    } else if (rejected.length > 0) {
-      // Partial accept — remove only rejected fields from merged data
-      const currentData = { ...(profile.profile_data || {}) } as Record<string, any>;
-      for (const field of rejected) {
-        delete currentData[field.key];
-      }
-
-      const { error } = await supabase
-        .from("brand_profiles")
-        .update({
-          profile_data: currentData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", profileId);
-
-      if (error) {
-        toast.error("Failed to save changes");
-        setSavingReview(false);
-        return;
-      }
-
-      toast.success(
-        `Accepted ${accepted.length} attribute(s), rejected ${rejected.length}`
-      );
-    } else {
-      // All accepted — data already merged by the upload API
-      toast.success(`Accepted all ${accepted.length} extracted attribute(s)`);
-    }
-
-    await loadProfile();
-    setUploadStatus("idle");
-    setExtractedFields([]);
-    setExtractedData(null);
-    setUploadResult(null);
-    setSavingReview(false);
-  }
-
-  const allReviewed = extractedFields.length > 0 && extractedFields.every((f) => f.accepted !== null);
   const completeness = profile?.completeness ?? 0;
 
   // --- Message handling ---
@@ -541,14 +401,14 @@ export default function TrainProfilePage() {
             </Card>
           )}
 
-          {/* Review Extracted Fields */}
-          {uploadStatus === "review" && uploadResult && (
-            <Card className="border-amber-500/30">
+          {/* Upload Success */}
+          {uploadStatus === "success" && uploadResult && (
+            <Card className="border-green-500/30">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-amber-500" />
-                    <CardTitle className="text-base">Extracted Attributes</CardTitle>
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <CardTitle className="text-base">Document Uploaded</CardTitle>
                   </div>
                   <Button
                     variant="ghost"
@@ -556,112 +416,72 @@ export default function TrainProfilePage() {
                     className="h-7 w-7"
                     onClick={() => {
                       setUploadStatus("idle");
-                      setExtractedFields([]);
-                      setExtractedData(null);
                       setUploadResult(null);
+                      setAnalysisResult(null);
                     }}
                   >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
-                {uploadResult.summary && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {uploadResult.summary}
-                  </p>
-                )}
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Bulk actions */}
-                <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <span className="text-xs text-muted-foreground">
-                    {extractedFields.filter((f) => f.accepted === true).length} accepted,{" "}
-                    {extractedFields.filter((f) => f.accepted === false).length} rejected,{" "}
-                    {extractedFields.filter((f) => f.accepted === null).length} pending
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={acceptAll}>
-                      Accept All
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={rejectAll}>
-                      Reject All
-                    </Button>
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                  <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{uploadResult.file_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(uploadResult.file_size)} &middot;{" "}
+                      {uploadResult.word_count.toLocaleString()} words &middot;{" "}
+                      {uploadResult.extraction_method}
+                    </p>
                   </div>
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                    {uploadResult.file_type.toUpperCase()}
+                  </Badge>
                 </div>
-
-                {/* Individual fields */}
-                {extractedFields.map((field) => (
-                  <div
-                    key={field.key}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                      field.accepted === true
-                        ? "border-green-500/30 bg-green-500/5"
-                        : field.accepted === false
-                          ? "border-destructive/30 bg-destructive/5"
-                          : "border-border"
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-sm font-medium">{field.label}</span>
-                        <Badge
-                          variant={
-                            field.confidence === "high"
-                              ? "success"
-                              : field.confidence === "low"
-                                ? "warning"
-                                : "outline"
-                          }
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          {field.confidence}
+                {analysisResult && analysisResult.fields_populated.length > 0 && (
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 space-y-2">
+                    <p className="text-xs font-medium text-green-700 dark:text-green-300">
+                      Extracted {analysisResult.fields_populated.length} attribute(s)
+                      {analysisResult.confidence && (
+                        <span className="text-green-600/70 dark:text-green-400/70"> · {analysisResult.confidence} confidence</span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {analysisResult.fields_populated.map((field) => (
+                        <Badge key={field} variant="outline" className="text-[10px] bg-white dark:bg-transparent">
+                          {field.replace(/_/g, " ").replace(/\./g, " > ")}
                         </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {field.preview}
+                      ))}
+                    </div>
+                    {analysisResult.gaps.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Still needed: {analysisResult.gaps.slice(0, 3).join(", ")}
                       </p>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        variant={field.accepted === true ? "default" : "outline"}
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7",
-                          field.accepted === true && "bg-green-600 hover:bg-green-700"
-                        )}
-                        onClick={() => setFieldAccepted(field.key, true)}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant={field.accepted === false ? "destructive" : "outline"}
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setFieldAccepted(field.key, false)}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Save button */}
-                <div className="pt-2">
-                  <Button
-                    className="w-full"
-                    disabled={!allReviewed || savingReview}
-                    onClick={saveReview}
-                  >
-                    {savingReview ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
                     )}
-                    {allReviewed
-                      ? `Save (${extractedFields.filter((f) => f.accepted).length} accepted)`
-                      : "Review all attributes to continue"}
-                  </Button>
-                </div>
+                  </div>
+                )}
+                {uploadResult.preview && !analysisResult?.fields_populated.length && (
+                  <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto">
+                    {uploadResult.preview}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {analysisResult?.fields_populated.length
+                    ? "Brand attributes have been extracted and merged into your profile. Upload more documents or continue the conversation to fill remaining gaps."
+                    : "Document text has been extracted and stored. Continue the training conversation below to incorporate this content into your brand voice profile."}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setUploadStatus("idle");
+                    setUploadResult(null);
+                  }}
+                >
+                  Upload Another Document
+                </Button>
               </CardContent>
             </Card>
           )}

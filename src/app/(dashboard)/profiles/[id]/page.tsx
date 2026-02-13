@@ -5,16 +5,18 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Badge, Separator } from "@/components/ui/shared";
-import { ArrowLeft, GraduationCap, Loader2, Play, Trash2 } from "lucide-react";
+import { ArrowLeft, GraduationCap, Loader2, Play, Trash2, FileText, FileType2, File } from "lucide-react";
 import { toast } from "sonner";
-import type { BrandProfile } from "@/types";
+import type { BrandProfile, TrainingDocument } from "@/types";
 import { cn } from "@/lib/utils";
 
 export default function ProfileDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [profile, setProfile] = useState<BrandProfile | null>(null);
+  const [trainingDocs, setTrainingDocs] = useState<TrainingDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const supabase = createClient();
 
   const loadProfile = useCallback(async () => {
@@ -28,7 +30,18 @@ export default function ProfileDetailPage() {
     setLoading(false);
   }, [supabase, params.id]);
 
-  useEffect(() => { loadProfile(); }, [loadProfile]);
+  const loadTrainingDocs = useCallback(async () => {
+    const { data } = await supabase
+      .from("training_documents")
+      .select("*")
+      .eq("brand_profile_id", params.id)
+      .eq("processing_status", "complete")
+      .order("created_at", { ascending: false });
+
+    setTrainingDocs((data || []) as TrainingDocument[]);
+  }, [supabase, params.id]);
+
+  useEffect(() => { loadProfile(); loadTrainingDocs(); }, [loadProfile, loadTrainingDocs]);
 
   async function activateProfile() {
     if (!profile) return;
@@ -62,6 +75,32 @@ export default function ProfileDetailPage() {
 
     toast.success("Profile deleted");
     router.push("/profiles");
+  }
+
+  async function deleteTrainingDoc(docId: string) {
+    if (!confirm("Delete this training document?")) return;
+    setDeletingDocId(docId);
+
+    try {
+      const res = await fetch("/api/training/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: docId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Delete failed");
+      }
+
+      toast.success("Document deleted");
+      loadTrainingDocs();
+      loadProfile();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete document");
+    } finally {
+      setDeletingDocId(null);
+    }
   }
 
   if (loading) {
@@ -197,6 +236,60 @@ export default function ProfileDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Training Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Training Documents</CardTitle>
+          <CardDescription>Uploaded files used to extract brand voice attributes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {trainingDocs.length > 0 ? (
+            <div className="space-y-2">
+              {trainingDocs.map((doc) => {
+                const wordCount = (doc.extracted_content as any)?.word_count;
+                const FileIcon = doc.file_type === "pdf" ? FileType2 : doc.file_type === "docx" ? File : FileText;
+                return (
+                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {doc.file_type.toUpperCase()}
+                          {wordCount ? ` · ${wordCount.toLocaleString()} words` : ""}
+                          {" · "}
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge variant="success" className="text-[10px]">processed</Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteTrainingDoc(doc.id)}
+                        disabled={deletingDocId === doc.id}
+                      >
+                        {deletingDocId === doc.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No training documents uploaded yet. Go to Train Profile to upload brand documents.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Training Sources */}
       <Card>

@@ -201,21 +201,28 @@ export interface GeneratedContent {
 }
 
 // ── Adherence Scoring ────────────────────────────────────────────────────
+export interface DimensionScore {
+  score: number; // 0–10
+  weight: number;
+  flags: AdherenceFlag[];
+  notes: string;
+}
+
 export interface AdherenceScore {
   overall_score: number;
   pass: boolean;
-  dimension_scores: {
-    voice_alignment: number;
-    tone_match: number;
-    tier_compliance: number | null;
-    terminology_consistency: number;
-    readability_compliance: number;
-    channel_compliance: number;
-    lifecycle_appropriateness: number;
-    module_compliance: number;
+  scores: {
+    voice_consistency: DimensionScore;
+    tone_accuracy: DimensionScore;
+    compliance: DimensionScore;
+    terminology: DimensionScore;
+    platform_optimization: DimensionScore;
+    objective_alignment: DimensionScore;
+    pattern_adherence: DimensionScore;
+    overall_quality: DimensionScore;
   };
   flags: AdherenceFlag[];
-  confidence: "low" | "medium" | "high";
+  suggestions: string[];
 }
 
 export interface AdherenceFlag {
