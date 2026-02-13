@@ -2,8 +2,8 @@ import { anthropic } from "@ai-sdk/anthropic";
 import type { AIModel, ContentTypeDetection } from "@/types";
 
 export const MODELS = {
-  sonnet: "claude-sonnet-4-5-20250929" as const,
-  opus: "claude-opus-4-6" as const,
+  sonnet: "claude-sonnet-4-5-20250514" as const,
+  opus: "claude-opus-4-6-20250612" as const,
 };
 
 export function getModel(modelId: AIModel) {
@@ -11,10 +11,16 @@ export function getModel(modelId: AIModel) {
 }
 
 /**
- * Intelligently select the best model based on task complexity.
- * Users can override this via the UI.
+ * Select the model for a given task.
+ * Currently: Sonnet 4.5 for all tasks.
+ *
+ * To re-enable intelligent routing, uncomment the block below
+ * and change the complex tasks return to MODELS.opus.
  */
 export function selectModelForTask(taskType: string): AIModel {
+  return MODELS.sonnet;
+
+  /* RE-ENABLE INTELLIGENT ROUTING:
   const complexTasks = [
     "full_ux_journey",
     "email_campaign",
@@ -23,21 +29,12 @@ export function selectModelForTask(taskType: string): AIModel {
     "multi_tier_content",
   ];
 
-  const simpleTasks = [
-    "single_element",
-    "profile_question",
-    "adherence_scoring",
-    "brand_training",
-    "simple_edit",
-    "sms_copy",
-    "push_copy",
-  ];
-
   if (complexTasks.includes(taskType)) {
     return MODELS.opus;
   }
 
   return MODELS.sonnet;
+  */
 }
 
 /**
@@ -46,7 +43,6 @@ export function selectModelForTask(taskType: string): AIModel {
 export function detectContentType(message: string): ContentTypeDetection {
   const lower = message.toLowerCase();
 
-  // Explicit mentions
   if (/\b(ux|user experience|journey|flow|screen|page|onboarding|checkout|form|modal|tooltip|empty state|error state)\b/.test(lower)) {
     return "ux_journey";
   }
@@ -60,7 +56,6 @@ export function detectContentType(message: string): ContentTypeDetection {
     return "push";
   }
 
-  // Figma URL = likely UX
   if (/figma\.com/.test(lower)) {
     return "ux_journey";
   }
@@ -77,22 +72,18 @@ export function classifyTaskComplexity(
 ): string {
   const lower = message.toLowerCase();
 
-  // Multi-step or multi-screen
   if (/\b(journey|flow|full|complete|end.to.end|multi|several|all screens)\b/.test(lower)) {
     return "full_ux_journey";
   }
 
-  // Campaign or series
   if (/\b(campaign|series|sequence|drip|lifecycle)\b/.test(lower)) {
     return "email_campaign";
   }
 
-  // Variants
   if (/\b(variant|version|a\/b|alternative|option)\b/.test(lower)) {
     return "multi_variant";
   }
 
-  // Simple single-element tasks
   if (/\b(button|cta|heading|title|label|placeholder|tooltip)\b/.test(lower)) {
     return "single_element";
   }
