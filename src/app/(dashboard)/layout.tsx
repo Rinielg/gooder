@@ -12,6 +12,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
+  function handleProfileChange(id: string) {
+    const profileId = id || null;
+    setActiveProfileId(profileId);
+    // Store in localStorage for persistence across page navigations
+    if (profileId) {
+      localStorage.setItem("bvp_active_profile", profileId);
+    } else {
+      localStorage.removeItem("bvp_active_profile");
+    }
+    // Notify child pages (e.g., chat) that the profile changed
+    window.dispatchEvent(
+      new CustomEvent("bvp-profile-change", { detail: { profileId } })
+    );
+  }
+
   const loadWorkspaceData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -38,10 +53,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         if (profileData) {
           setProfiles(profileData as BrandProfile[]);
-          // Auto-select first active profile
-          const active = profileData.find((p: any) => p.status === "active");
-          if (active && !activeProfileId) {
-            setActiveProfileId(active.id);
+
+          // Restore from localStorage, or auto-select first active profile
+          const stored = localStorage.getItem("bvp_active_profile");
+          const storedProfile = stored && profileData.find((p: any) => p.id === stored);
+          const firstActive = profileData.find((p: any) => p.status === "active" || p.status === "training");
+
+          if (storedProfile) {
+            handleProfileChange(stored);
+          } else if (firstActive) {
+            handleProfileChange(firstActive.id);
           }
         }
       }
@@ -50,33 +71,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } finally {
       setLoading(false);
     }
-  }, [supabase, activeProfileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   useEffect(() => {
     loadWorkspaceData();
   }, [loadWorkspaceData]);
-
-  function handleProfileChange(id: string) {
-    setActiveProfileId(id || null);
-    // Store in localStorage for persistence across page navigations
-    if (id) {
-      localStorage.setItem("bvp_active_profile", id);
-    } else {
-      localStorage.removeItem("bvp_active_profile");
-    }
-    // Notify child pages (e.g., chat) that the profile changed
-    window.dispatchEvent(
-      new CustomEvent("bvp-profile-change", { detail: { profileId: id || null } })
-    );
-  }
-
-  // Restore active profile from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("bvp_active_profile");
-    if (stored && !activeProfileId) {
-      setActiveProfileId(stored);
-    }
-  }, [activeProfileId]);
 
   if (loading) {
     return (
