@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS platform_standards (
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('predefined', 'custom')),
-  category TEXT NOT NULL CHECK (category IN ('ux_journey', 'email', 'sms', 'push', 'general')),
+  category TEXT NOT NULL CHECK (category IN ('all', 'ux_journey', 'email', 'sms', 'push', 'general')),
   content JSONB NOT NULL DEFAULT '{}'::jsonb,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

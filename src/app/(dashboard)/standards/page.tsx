@@ -165,7 +165,9 @@ export default function StandardsPage() {
 
       resetForm();
       load();
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Standard save error:", msg);
       toast.error(editingId ? "Failed to update standard" : "Failed to create standard");
     } finally {
       setSaving(false);
