@@ -142,7 +142,7 @@ export interface TrainingDocument {
 
 // ── Platform Standards ───────────────────────────────────────────────────
 export type StandardType = "predefined" | "custom";
-export type StandardCategory = "ux_journey" | "email" | "sms" | "push" | "general";
+export type StandardCategory = "all" | "ux_journey" | "email" | "sms" | "push" | "general";
 
 export interface PlatformStandard {
   id: string;

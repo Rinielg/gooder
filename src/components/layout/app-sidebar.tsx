@@ -23,7 +23,7 @@ interface SidebarProps {
 const navItems = [
   { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/profiles", icon: Mic2, label: "Brand Profiles" },
-  { href: "/standards", icon: FileText, label: "Standards" },
+  { href: "/standards", icon: FileText, label: "Standards & Rules" },
   { href: "/objectives", icon: Target, label: "Objectives" },
   { href: "/definitions", icon: BookOpen, label: "Definitions" },
   { href: "/outputs", icon: Archive, label: "Output Library" },

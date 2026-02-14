@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import type { PlatformStandard, StandardCategory } from "@/types";
 
 const CATEGORIES: { value: StandardCategory; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "ux_journey", label: "UX Journey" },
   { value: "email", label: "Email" },
   { value: "sms", label: "SMS" },
@@ -206,9 +207,9 @@ export default function StandardsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Platform Standards</h1>
+          <h1 className="text-2xl font-bold">Platform Standards & Rules</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Best practices applied to all content generation
+            Best practices and rules applied to all content generation
           </p>
         </div>
         {!showForm && (
@@ -324,10 +325,10 @@ export default function StandardsPage() {
                           {std.type}
                         </Badge>
                         <Badge
-                          variant={std.category === "ux_journey" ? "default" : "outline"}
+                          variant={std.category === "all" ? "default" : std.category === "ux_journey" ? "default" : "outline"}
                           className="text-xs"
                         >
-                          {std.category.replace("_", " ")}
+                          {std.category === "all" ? "All Categories" : std.category.replace("_", " ")}
                         </Badge>
                       </div>
                       {rules.length > 0 && (
