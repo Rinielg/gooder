@@ -15,9 +15,10 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, profileId } = body as {
+    const { messages, profileId, figmaContext: clientFigmaContext } = body as {
       messages: UIMessage[];
       profileId?: string;
+      figmaContext?: string;
     };
 
     // Require a brand profile for content generation
@@ -117,11 +118,15 @@ export async function POST(request: NextRequest) {
     const taskComplexity = classifyTaskComplexity(userContent, contentType);
     const selectedModel = selectModelForTask(taskComplexity);
 
-    // Check for Figma URL
+    // Use client-extracted Figma context if provided, otherwise note the URL
     let figmaContext: string | undefined;
-    const figmaMatch = userContent.match(/\[Figma:\s*(https:\/\/[^\]]+)\]/);
-    if (figmaMatch) {
-      figmaContext = `Figma URL provided: ${figmaMatch[1]}. Frame data extraction available in future update.`;
+    if (clientFigmaContext) {
+      figmaContext = clientFigmaContext;
+    } else {
+      const figmaMatch = userContent.match(/\[Figma:\s*(https:\/\/[^\]]+)\]/);
+      if (figmaMatch) {
+        figmaContext = `Figma URL provided: ${figmaMatch[1]}. No extracted data available — user may not have confirmed extraction.`;
+      }
     }
 
     // Build system prompt

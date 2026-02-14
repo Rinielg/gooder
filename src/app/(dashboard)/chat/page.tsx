@@ -10,10 +10,49 @@ import {
   Send, Loader2, Bot, User, Save,
   Sparkles, Link2, Zap, ChevronDown, ChevronUp,
   AlertTriangle, RefreshCw, ShieldCheck, ShieldX,
+  Layout, Type, Component, Check, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { OutputType, AdherenceScore } from "@/types";
+
+// ── Figma extraction types ──────────────────────────────────────────────
+interface FigmaComponent {
+  id: string;
+  name: string;
+  type: string;
+  width?: number;
+  height?: number;
+}
+
+interface FigmaText {
+  id: string;
+  name: string;
+  characters: string;
+  fontSize?: number;
+  fontFamily?: string;
+}
+
+interface FigmaLayout {
+  name: string;
+  type: string;
+  width: number;
+  height: number;
+  layoutMode?: string;
+  itemSpacing?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  children: number;
+}
+
+interface FigmaExtraction {
+  frameName: string;
+  components: FigmaComponent[];
+  texts: FigmaText[];
+  layout: FigmaLayout;
+}
 
 const DIMENSION_LABELS: Record<string, string> = {
   voice_consistency: "Voice Consistency",
@@ -63,6 +102,13 @@ export default function ChatPage() {
   // Track which message IDs we've already started scoring
   const scoredRef = useRef<Set<string>>(new Set());
 
+  // Figma extraction state
+  const [figmaExtraction, setFigmaExtraction] = useState<FigmaExtraction | null>(null);
+  const [figmaLoading, setFigmaLoading] = useState(false);
+  const [figmaError, setFigmaError] = useState<string | null>(null);
+  // Confirmed Figma context to include in the next message
+  const confirmedFigmaRef = useRef<string | null>(null);
+
   // Keep a ref so the transport body function always reads the latest value
   const profileIdRef = useRef<string | null>(activeProfileId);
   profileIdRef.current = activeProfileId;
@@ -77,12 +123,19 @@ export default function ChatPage() {
     return () => window.removeEventListener("bvp-profile-change", onProfileChange);
   }, []);
 
-  // Stable transport — body is a function so it always reads the latest profileId from the ref
+  // Stable transport — body is a function so it always reads the latest values from refs
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: () => ({ profileId: profileIdRef.current }),
+        body: () => {
+          const b: Record<string, unknown> = { profileId: profileIdRef.current };
+          if (confirmedFigmaRef.current) {
+            b.figmaContext = confirmedFigmaRef.current;
+            confirmedFigmaRef.current = null; // Clear after sending
+          }
+          return b;
+        },
       }),
     []
   );
@@ -192,6 +245,75 @@ export default function ChatPage() {
     sendMessage({ text: prompt });
   }
 
+  // ── Figma extraction ───────────────────────────────────────────────
+  async function extractFigma(url: string) {
+    setFigmaLoading(true);
+    setFigmaError(null);
+    setFigmaExtraction(null);
+
+    try {
+      const res = await fetch("/api/figma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ figmaUrl: url }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        setFigmaError(err.error || `Failed (${res.status})`);
+        return;
+      }
+
+      const data: FigmaExtraction = await res.json();
+      setFigmaExtraction(data);
+    } catch {
+      setFigmaError("Failed to connect to Figma extraction service");
+    } finally {
+      setFigmaLoading(false);
+    }
+  }
+
+  function confirmFigma() {
+    if (!figmaExtraction) return;
+
+    // Build a structured text representation for the system prompt
+    const lines: string[] = [];
+    lines.push(`Frame: ${figmaExtraction.frameName}`);
+    lines.push(`Dimensions: ${figmaExtraction.layout.width}×${figmaExtraction.layout.height}`);
+    if (figmaExtraction.layout.layoutMode) {
+      lines.push(`Auto-layout: ${figmaExtraction.layout.layoutMode}, spacing: ${figmaExtraction.layout.itemSpacing ?? 0}px`);
+      const pad = figmaExtraction.layout;
+      if (pad.paddingTop || pad.paddingRight || pad.paddingBottom || pad.paddingLeft) {
+        lines.push(`Padding: ${pad.paddingTop ?? 0} ${pad.paddingRight ?? 0} ${pad.paddingBottom ?? 0} ${pad.paddingLeft ?? 0}`);
+      }
+    }
+    lines.push(`Direct children: ${figmaExtraction.layout.children}`);
+
+    if (figmaExtraction.components.length > 0) {
+      lines.push("\nComponents:");
+      figmaExtraction.components.forEach((c) => {
+        lines.push(`  - ${c.name} (${c.type}${c.width ? `, ${c.width}×${c.height}` : ""})`);
+      });
+    }
+
+    if (figmaExtraction.texts.length > 0) {
+      lines.push("\nText nodes:");
+      figmaExtraction.texts.forEach((t) => {
+        const meta = [t.fontFamily, t.fontSize ? `${t.fontSize}px` : null].filter(Boolean).join(", ");
+        lines.push(`  - "${t.characters}"${meta ? ` (${meta})` : ""}`);
+      });
+    }
+
+    confirmedFigmaRef.current = lines.join("\n");
+    setFigmaExtraction(null);
+    toast.success("Figma data attached — it will be included with your next message");
+  }
+
+  function dismissFigma() {
+    setFigmaExtraction(null);
+    setFigmaError(null);
+  }
+
   // ── Input handling ──────────────────────────────────────────────────
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -200,6 +322,15 @@ export default function ChatPage() {
       toast.error("Please select a brand profile from the sidebar before generating content.");
       return;
     }
+
+    // Detect [Figma: URL] pattern and auto-extract
+    const figmaMatch = input.match(/\[Figma:\s*(https:\/\/[^\]]+)\]/);
+    if (figmaMatch && !confirmedFigmaRef.current && !figmaExtraction) {
+      extractFigma(figmaMatch[1]);
+      // Don't send yet — wait for user to confirm/dismiss the extraction
+      return;
+    }
+
     sendMessage({ text: input });
     setInput("");
     if (inputRef.current) {
@@ -550,6 +681,126 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Figma extraction preview */}
+      {(figmaLoading || figmaExtraction || figmaError) && (
+        <div className="border-t border-border bg-background">
+          <div className="max-w-3xl mx-auto px-4 py-3">
+            {figmaLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Extracting Figma frame data...
+              </div>
+            )}
+
+            {figmaError && (
+              <div className="flex items-center justify-between rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-3">
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  {figmaError}
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={dismissFigma}>
+                  Dismiss
+                </Button>
+              </div>
+            )}
+
+            {figmaExtraction && (
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layout className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{figmaExtraction.frameName}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {figmaExtraction.layout.width}×{figmaExtraction.layout.height}
+                      </Badge>
+                      {figmaExtraction.layout.layoutMode && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {figmaExtraction.layout.layoutMode}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={confirmFigma}
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Use this data
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={dismissFigma}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  {/* Components */}
+                  {figmaExtraction.components.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
+                        <Component className="w-3 h-3" />
+                        Components ({figmaExtraction.components.length})
+                      </div>
+                      <ul className="space-y-0.5">
+                        {figmaExtraction.components.slice(0, 8).map((c) => (
+                          <li key={c.id} className="text-muted-foreground truncate">
+                            {c.name} <span className="opacity-60">({c.type})</span>
+                          </li>
+                        ))}
+                        {figmaExtraction.components.length > 8 && (
+                          <li className="text-muted-foreground/60">
+                            +{figmaExtraction.components.length - 8} more
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Text nodes */}
+                  {figmaExtraction.texts.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
+                        <Type className="w-3 h-3" />
+                        Text nodes ({figmaExtraction.texts.length})
+                      </div>
+                      <ul className="space-y-0.5">
+                        {figmaExtraction.texts.slice(0, 8).map((t) => (
+                          <li key={t.id} className="text-muted-foreground truncate">
+                            &quot;{t.characters}&quot;
+                            {t.fontSize && <span className="opacity-60"> ({t.fontSize}px)</span>}
+                          </li>
+                        ))}
+                        {figmaExtraction.texts.length > 8 && (
+                          <li className="text-muted-foreground/60">
+                            +{figmaExtraction.texts.length - 8} more
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  {figmaExtraction.components.length === 0 && figmaExtraction.texts.length === 0 && (
+                    <p className="text-muted-foreground col-span-2">
+                      No components or text nodes found in this frame.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div className="border-t border-border bg-background">
