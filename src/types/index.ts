@@ -259,7 +259,7 @@ export interface ChatMessage {
 export type ContentTypeDetection = "ux_journey" | "email" | "sms" | "push" | "unknown";
 
 // ── AI Model Config ──────────────────────────────────────────────────────
-export type AIModel = "claude-sonnet-4-5-20250514" | "claude-opus-4-6-20250612";
+export type AIModel = "claude-sonnet-4-5-20250929" | "claude-opus-4-6";
 
 export interface ModelConfig {
   id: AIModel;
@@ -270,13 +270,13 @@ export interface ModelConfig {
 
 export const AI_MODELS: ModelConfig[] = [
   {
-    id: "claude-sonnet-4-5-20250514",
+    id: "claude-sonnet-4-5-20250929",
     name: "Claude Sonnet 4.5",
     description: "Fast and efficient for routine tasks",
     costTier: "standard",
   },
   {
-    id: "claude-opus-4-6-20250612",
+    id: "claude-opus-4-6",
     name: "Claude Opus 4.6",
     description: "Maximum capability for complex generation",
     costTier: "premium",

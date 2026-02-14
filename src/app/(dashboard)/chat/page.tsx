@@ -84,12 +84,7 @@ function scoreBarColor(score: number): string {
 }
 
 export default function ChatPage() {
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("bvp_active_profile");
-    }
-    return null;
-  });
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -110,8 +105,14 @@ export default function ChatPage() {
   const confirmedFigmaRef = useRef<string | null>(null);
 
   // Keep a ref so the transport body function always reads the latest value
-  const profileIdRef = useRef<string | null>(activeProfileId);
+  const profileIdRef = useRef<string | null>(null);
   profileIdRef.current = activeProfileId;
+
+  // Read profile from localStorage on mount (SSR-safe — runs after hydration)
+  useEffect(() => {
+    const stored = localStorage.getItem("bvp_active_profile");
+    if (stored) setActiveProfileId(stored);
+  }, []);
 
   // Listen for profile changes from the sidebar (layout dispatches this event)
   useEffect(() => {

@@ -2,8 +2,8 @@ import { anthropic } from "@ai-sdk/anthropic";
 import type { AIModel, ContentTypeDetection } from "@/types";
 
 export const MODELS = {
-  sonnet: "claude-sonnet-4-5-20250514" as const,
-  opus: "claude-opus-4-6-20250612" as const,
+  sonnet: "claude-sonnet-4-5-20250929" as const,
+  opus: "claude-opus-4-6" as const,
 };
 
 export function getModel(modelId: AIModel) {
