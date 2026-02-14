@@ -126,13 +126,22 @@ CRITICAL RULES:
   }
 
   // ── Platform Standards ─────────────────────────────────────────────────
-  if (standards.length > 0) {
-    let standardsSection = "\n## PLATFORM STANDARDS & BEST PRACTICES\n";
-    standards
-      .filter((s) => s.is_active)
-      .forEach((s) => {
-        standardsSection += `\n### ${s.name} (${s.category}):\n${JSON.stringify(s.content, null, 2)}\n`;
-      });
+  const activeStandards = standards.filter((s) => s.is_active);
+  if (activeStandards.length > 0) {
+    let standardsSection = "\n## MANDATORY PLATFORM STANDARDS & RULES\nIMPORTANT: The following rules are MANDATORY. Every rule listed below MUST be followed in ALL generated content. Violating any rule is a critical failure.\n";
+    activeStandards.forEach((s) => {
+      const categoryLabel = s.category === "all" ? "Applies to: ALL content types" : `Applies to: ${s.category.replace("_", " ")}`;
+      standardsSection += `\n### ${s.name} (${categoryLabel})\n`;
+      const content = s.content as Record<string, unknown>;
+      if (content && Array.isArray(content.rules)) {
+        (content.rules as string[]).forEach((rule, i) => {
+          standardsSection += `  ${i + 1}. **RULE**: ${rule}\n`;
+        });
+      } else {
+        standardsSection += `${JSON.stringify(content, null, 2)}\n`;
+      }
+    });
+    standardsSection += "\nREMINDER: The above rules are NON-NEGOTIABLE. Check your output against every rule before delivering. If a rule says to avoid something (e.g. certain punctuation, words, or patterns), ensure ZERO instances appear in your output.\n";
     sections.push(standardsSection);
   }
 
@@ -230,10 +239,20 @@ export function buildAdherencePrompt({
   objectives?: Objective[];
   definitions?: Definition[];
 }): string {
-  const standardsBlock =
-    standards && standards.length > 0
-      ? `\n## PLATFORM STANDARDS\n${JSON.stringify(standards, null, 2)}`
-      : "";
+  let standardsBlock = "";
+  if (standards && standards.length > 0) {
+    standardsBlock = "\n## MANDATORY PLATFORM STANDARDS & RULES\nEach rule below MUST be checked against the content. Any violation is a scoring penalty.\n";
+    standards.forEach((s) => {
+      const categoryLabel = s.category === "all" ? "ALL content types" : s.category.replace("_", " ");
+      standardsBlock += `\n### ${s.name} (${categoryLabel})\n`;
+      const content = s.content as Record<string, unknown>;
+      if (content && Array.isArray(content.rules)) {
+        (content.rules as string[]).forEach((rule, i) => {
+          standardsBlock += `  ${i + 1}. CHECK: ${rule}\n`;
+        });
+      }
+    });
+  }
   const objectivesBlock =
     objectives && objectives.length > 0
       ? `\n## ACTIVE OBJECTIVES\n${JSON.stringify(objectives, null, 2)}`
@@ -267,12 +286,12 @@ Score each dimension 0–10. Provide per-dimension flags and notes.
 
 1. voice_consistency (0.20): Do the brand voice pillars come through consistently? Are anti-patterns absent? Does it sound like the brand?
 2. tone_accuracy (0.15): Does the tone match the intended situation, emotional gradient, and audience tier?
-3. compliance (0.20): All required disclosures present? No prohibited language? Governance rules followed? Module requirements met?
+3. compliance (0.20): All required disclosures present? No prohibited language? Governance rules followed? Module requirements met? CRITICAL: Check EVERY rule from MANDATORY PLATFORM STANDARDS above — each violation must be flagged with severity "fail". If any mandatory rule is violated, cap this dimension at 4/10 maximum.
 4. terminology (0.10): Are canonical terms used correctly? Deprecated terms absent? Definitions followed?
 5. platform_optimization (0.10): Does length, format, and structure match the content type and channel constraints?
 6. objective_alignment (0.10): Does the content serve the active business objectives?
-7. pattern_adherence (0.05): Does the content follow established content patterns (structures, frameworks, templates)?
-8. overall_quality (0.10): Readability, clarity, grammar, active voice, sentence variety, professionalism.
+7. pattern_adherence (0.10): Does the content follow established content patterns (structures, frameworks, templates)? Does it comply with ALL custom platform standards and rules? Flag each specific rule violation.
+8. overall_quality (0.05): Readability, clarity, grammar, active voice, sentence variety, professionalism.
 
 ## SEVERITY RULES
 - CRITICAL: compliance score < 7 = AUTOMATIC FAIL regardless of overall score
@@ -290,8 +309,8 @@ Respond with ONLY valid JSON matching this exact schema:
     "terminology": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
     "platform_optimization": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
     "objective_alignment": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
-    "pattern_adherence": { "score": number, "weight": 0.05, "flags": [], "notes": "" },
-    "overall_quality": { "score": number, "weight": 0.10, "flags": [], "notes": "" }
+    "pattern_adherence": { "score": number, "weight": 0.10, "flags": [], "notes": "" },
+    "overall_quality": { "score": number, "weight": 0.05, "flags": [], "notes": "" }
   },
   "suggestions": ["actionable improvement suggestion"]
 }
