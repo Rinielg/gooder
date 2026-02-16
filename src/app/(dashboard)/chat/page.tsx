@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/shared";
 import {
-  Send, Loader2, Bot, User, Save,
+  Send, Loader2, Bot, User, Save, Copy,
   Sparkles, Link2, Zap, ChevronDown, ChevronUp,
   AlertTriangle, RefreshCw, ShieldCheck, ShieldX,
   Layout, Type, Component, Check, X,
@@ -81,6 +81,71 @@ function scoreBarColor(score: number): string {
   if (score >= 8) return "bg-green-500";
   if (score >= 6) return "bg-yellow-500";
   return "bg-red-500";
+}
+
+interface ContentSection {
+  title: string;
+  body: string;
+  raw: string;
+}
+
+/** Remove --- horizontal rules and the blank line above them */
+function cleanHorizontalRules(text: string): string {
+  return text.replace(/\n?\s*^---+\s*$/gm, "").replace(/\n{3,}/g, "\n\n");
+}
+
+
+function splitIntoSections(content: string): ContentSection[] {
+  // Clean --- rules from the entire content first
+  const cleaned = cleanHorizontalRules(content);
+
+  // Split on ### headings (the AI output format uses ### for section headers)
+  const parts = cleaned.split(/^###\s+/m);
+  const sections: ContentSection[] = [];
+  let hasGeneratedContent = false;
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // First line is the heading, rest is body
+    const newlineIdx = trimmed.indexOf("\n");
+    if (newlineIdx === -1) {
+      const title = trimmed.replace(/\*+/g, "").trim();
+      if (title === "Generated Content") hasGeneratedContent = true;
+      sections.push({ title, body: "", raw: trimmed });
+    } else {
+      const title = trimmed.slice(0, newlineIdx).replace(/\*+/g, "").trim();
+      const body = trimmed.slice(newlineIdx + 1).trim();
+      if (title === "Generated Content") hasGeneratedContent = true;
+      sections.push({ title, body, raw: `### ${trimmed}` });
+    }
+  }
+
+  // If there's text before the first ###, include it as intro
+  // But only if there's no explicit "Generated Content" section (avoid duplication — change 5)
+  const beforeFirst = cleaned.split(/^###\s+/m)[0].trim();
+  if (beforeFirst && sections.length > 0 && !hasGeneratedContent) {
+    sections.unshift({ title: "", body: beforeFirst, raw: beforeFirst });
+  }
+
+  // If no sections were found, return whole content as one section
+  if (sections.length === 0) {
+    sections.push({ title: "", body: content, raw: content });
+  }
+
+  return sections;
+}
+
+/** Render text with **bold** support (change 2) */
+function renderFormattedText(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
 }
 
 export default function ChatPage() {
@@ -466,19 +531,48 @@ export default function ChatPage() {
                       <Bot className="w-4 h-4 text-primary" />
                     </div>
                   )}
-                  <div
-                    className={cn(
-                      "rounded-xl px-4 py-3 max-w-[85%]",
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card border border-border"
-                    )}
-                  >
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {message.content}
-                    </div>
-                    {message.role === "assistant" && message.content && (
-                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
+                  {message.role === "assistant" && message.content.includes("###") ? (
+                    <div className="w-full space-y-4">
+                      {splitIntoSections(message.content).map((section, idx) => (
+                        <div
+                          key={idx}
+                          className="group/section rounded-xl px-4 py-3 bg-card border border-border"
+                        >
+                          {section.title && (
+                            <h3 className="text-base font-semibold tracking-tight mb-2">
+                              {section.title}
+                            </h3>
+                          )}
+                          <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                            {renderFormattedText(section.body)}
+                          </div>
+                          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50 opacity-0 group-hover/section:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => saveOutput(message.id, section.raw)}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                navigator.clipboard.writeText(section.raw);
+                                toast.success(`${section.title || "Section"} copied`);
+                              }}
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {/* Full message save/copy */}
+                      <div className="flex items-center gap-2 px-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -486,7 +580,7 @@ export default function ChatPage() {
                           onClick={() => saveOutput(message.id, message.content)}
                         >
                           <Save className="w-3 h-3 mr-1" />
-                          Save
+                          Save All
                         </Button>
                         <Button
                           variant="ghost"
@@ -494,14 +588,52 @@ export default function ChatPage() {
                           className="h-7 text-xs"
                           onClick={() => {
                             navigator.clipboard.writeText(message.content);
-                            toast.success("Copied to clipboard");
+                            toast.success("Full response copied");
                           }}
                         >
-                          Copy
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy All
                         </Button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "rounded-xl px-4 py-3 max-w-[85%]",
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card border border-border"
+                      )}
+                    >
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </div>
+                      {message.role === "assistant" && message.content && (
+                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => saveOutput(message.id, message.content)}
+                          >
+                            <Save className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              navigator.clipboard.writeText(message.content);
+                              toast.success("Copied to clipboard");
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {message.role === "user" && (
                     <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-1">
                       <User className="w-4 h-4 text-muted-foreground" />
@@ -559,25 +691,50 @@ export default function ChatPage() {
                         {isExpanded && (
                           <div className="px-3 pb-3 space-y-3 border-t border-border">
                             {/* Dimension scores */}
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3">
+                            <div className="grid grid-cols-2 gap-3 pt-3">
                               {(Object.entries(score.scores) as [string, { score: number; weight: number; notes: string; flags: any[] }][]).map(
                                 ([key, dim]) => (
-                                  <div key={key} className="flex items-center gap-2">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between mb-0.5">
-                                        <span className="text-[11px] text-muted-foreground truncate">
-                                          {DIMENSION_LABELS[key] || key}
-                                        </span>
-                                        <span className={cn("text-[11px] font-semibold tabular-nums", scoreColor(dim.score))}>
-                                          {dim.score.toFixed(1)}
-                                        </span>
-                                      </div>
-                                      <div className="h-1 bg-muted rounded-full overflow-hidden">
-                                        <div
-                                          className={cn("h-full rounded-full transition-all", scoreBarColor(dim.score))}
-                                          style={{ width: `${dim.score * 10}%` }}
-                                        />
-                                      </div>
+                                  <div key={key} className="group/dim rounded-lg border border-border bg-card p-3">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[11px] font-medium text-foreground">
+                                        {DIMENSION_LABELS[key] || key}
+                                      </span>
+                                      <span className={cn("text-[11px] font-semibold tabular-nums", scoreColor(dim.score))}>
+                                        {dim.score.toFixed(1)}
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-2">
+                                      <div
+                                        className={cn("h-full rounded-full transition-all", scoreBarColor(dim.score))}
+                                        style={{ width: `${dim.score * 10}%` }}
+                                      />
+                                    </div>
+                                    {dim.notes && (
+                                      <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">{dim.notes}</p>
+                                    )}
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/dim:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-[10px] px-2"
+                                        onClick={() => saveOutput(message.id, `${DIMENSION_LABELS[key] || key}: ${dim.score.toFixed(1)}/10\n${dim.notes || ""}`)}
+                                      >
+                                        <Save className="w-2.5 h-2.5 mr-1" />
+                                        Save
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-[10px] px-2"
+                                        onClick={() => {
+                                          const text = `${DIMENSION_LABELS[key] || key}: ${dim.score.toFixed(1)}/10${dim.notes ? `\n${dim.notes}` : ""}${dim.flags?.length ? `\nFlags: ${dim.flags.map((f: any) => f.issue).join("; ")}` : ""}`;
+                                          navigator.clipboard.writeText(text);
+                                          toast.success(`${DIMENSION_LABELS[key] || key} copied`);
+                                        }}
+                                      >
+                                        <Copy className="w-2.5 h-2.5 mr-1" />
+                                        Copy
+                                      </Button>
                                     </div>
                                   </div>
                                 )
