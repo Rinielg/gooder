@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/shared";
+import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, Loader2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import type { Definition } from "@/types";

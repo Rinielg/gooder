@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, Badge } from "@/components/ui/shared";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Trash2, Loader2, Archive, Copy, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";

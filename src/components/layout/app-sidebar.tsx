@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/shared";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   MessageSquare, Mic2, FileText, Target, BookOpen,
   Archive, Settings, LogOut, ChevronLeft, ChevronRight, Zap,

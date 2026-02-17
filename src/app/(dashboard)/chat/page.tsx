@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/shared";
+import { Badge } from "@/components/ui/badge";
 import {
   Send, Loader2, Bot, User, Save, Copy,
   Sparkles, Link2, Zap, ChevronDown, ChevronUp,
