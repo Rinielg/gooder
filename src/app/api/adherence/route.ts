@@ -14,7 +14,7 @@ import type {
   AdherenceFlag,
 } from "@/types";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const DIMENSION_KEYS = [
   "voice_consistency",
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
           content: "Score the content above. Return ONLY valid JSON.",
         },
       ],
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4096,
       temperature: 0.2,
     });
 
