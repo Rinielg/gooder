@@ -33,12 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Tailwind config enforces 8px spacing grid -- all gap/padding/margin utilities align to the grid
   4. shared.tsx no longer exists; each component group lives in its own file under src/components/ui/ following shadcn convention
   5. A Figma file exists with the brand color palette, typography scale, and shadcn/UI component library ready for page design
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md -- Split shared.tsx into individual shadcn component files
+- [ ] 01-02-PLAN.md -- Define design tokens (color palette, Geist font, spacing grid, shadow elevation)
+- [ ] 01-03-PLAN.md -- Create Figma design system with brand tokens and component library
 
 ### Phase 2: Component Library
 **Goal**: All reusable UI primitives are installed, customized to the design system, and ready for page-level composition
