@@ -125,61 +125,61 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DSGN-01 | — | Pending |
-| DSGN-02 | — | Pending |
-| DSGN-03 | — | Pending |
-| DSGN-04 | — | Pending |
-| DSGN-05 | — | Pending |
-| DSGN-06 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
-| COMP-04 | — | Pending |
-| COMP-05 | — | Pending |
-| SHELL-01 | — | Pending |
-| SHELL-02 | — | Pending |
-| SHELL-03 | — | Pending |
-| SHELL-04 | — | Pending |
-| SHELL-05 | — | Pending |
-| SHELL-06 | — | Pending |
-| SHELL-07 | — | Pending |
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| CHAT-01 | — | Pending |
-| CHAT-02 | — | Pending |
-| CHAT-03 | — | Pending |
-| CHAT-04 | — | Pending |
-| CHAT-05 | — | Pending |
-| CHAT-06 | — | Pending |
-| CHAT-07 | — | Pending |
-| CHAT-08 | — | Pending |
-| CHAT-09 | — | Pending |
-| CHAT-10 | — | Pending |
-| CHAT-11 | — | Pending |
-| PAGE-01 | — | Pending |
-| PAGE-02 | — | Pending |
-| PAGE-03 | — | Pending |
-| PAGE-04 | — | Pending |
-| PAGE-05 | — | Pending |
-| PAGE-06 | — | Pending |
-| PAGE-07 | — | Pending |
-| PAGE-08 | — | Pending |
-| PAGE-09 | — | Pending |
-| PAGE-10 | — | Pending |
-| SETT-01 | — | Pending |
-| SETT-02 | — | Pending |
-| POLH-01 | — | Pending |
-| POLH-02 | — | Pending |
-| POLH-03 | — | Pending |
-| POLH-04 | — | Pending |
-| POLH-05 | — | Pending |
+| DSGN-01 | Phase 1 | Pending |
+| DSGN-02 | Phase 1 | Pending |
+| DSGN-03 | Phase 1 | Pending |
+| DSGN-04 | Phase 1 | Pending |
+| DSGN-05 | Phase 1 | Pending |
+| DSGN-06 | Phase 1 | Pending |
+| COMP-01 | Phase 2 | Pending |
+| COMP-02 | Phase 2 | Pending |
+| COMP-03 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Pending |
+| SHELL-01 | Phase 3 | Pending |
+| SHELL-02 | Phase 3 | Pending |
+| SHELL-03 | Phase 3 | Pending |
+| SHELL-04 | Phase 3 | Pending |
+| SHELL-05 | Phase 3 | Pending |
+| SHELL-06 | Phase 3 | Pending |
+| SHELL-07 | Phase 3 | Pending |
+| AUTH-01 | Phase 4 | Pending |
+| AUTH-02 | Phase 4 | Pending |
+| AUTH-03 | Phase 4 | Pending |
+| CHAT-01 | Phase 6 | Pending |
+| CHAT-02 | Phase 6 | Pending |
+| CHAT-03 | Phase 6 | Pending |
+| CHAT-04 | Phase 6 | Pending |
+| CHAT-05 | Phase 6 | Pending |
+| CHAT-06 | Phase 6 | Pending |
+| CHAT-07 | Phase 7 | Pending |
+| CHAT-08 | Phase 7 | Pending |
+| CHAT-09 | Phase 7 | Pending |
+| CHAT-10 | Phase 7 | Pending |
+| CHAT-11 | Phase 6 | Pending |
+| PAGE-01 | Phase 5 | Pending |
+| PAGE-02 | Phase 5 | Pending |
+| PAGE-03 | Phase 5 | Pending |
+| PAGE-04 | Phase 5 | Pending |
+| PAGE-05 | Phase 5 | Pending |
+| PAGE-06 | Phase 5 | Pending |
+| PAGE-07 | Phase 5 | Pending |
+| PAGE-08 | Phase 5 | Pending |
+| PAGE-09 | Phase 5 | Pending |
+| PAGE-10 | Phase 5 | Pending |
+| SETT-01 | Phase 5 | Pending |
+| SETT-02 | Phase 5 | Pending |
+| POLH-01 | Phase 8 | Pending |
+| POLH-02 | Phase 8 | Pending |
+| POLH-03 | Phase 8 | Pending |
+| POLH-04 | Phase 8 | Pending |
+| POLH-05 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 47 total
-- Mapped to phases: 0
-- Unmapped: 47 (will be mapped during roadmap creation)
+- v1 requirements: 49 total
+- Mapped to phases: 49
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 after roadmap creation (traceability mapped)*
