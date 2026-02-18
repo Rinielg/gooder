@@ -18,7 +18,17 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} light`}>
       <body className="font-sans antialiased">
         {children}
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="bottom-center"
+          duration={5000}
+          visibleToasts={3}
+          toastOptions={{
+            className: "font-sans",
+            style: {
+              fontFamily: "var(--font-geist-sans)",
+            },
+          }}
+        />
       </body>
     </html>
   );
