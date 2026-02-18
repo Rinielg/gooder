@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
+import { ProfileSelector } from "@/components/layout/profile-selector";
 import {
   MessageSquare, Mic2, FileText, Target, BookOpen,
   Archive, Settings, LogOut, ChevronLeft, ChevronRight, Zap,
@@ -78,21 +79,18 @@ export function AppSidebar({ workspace, profiles, activeProfileId, onProfileChan
         </p>
       </div>
 
-      {!collapsed && (
-        <div className="p-3 border-b border-sidebar-border">
-          <p className="text-xs font-medium text-muted-foreground mb-2 px-1">Active Profile</p>
-          <select
-            value={activeProfileId || ""}
-            onChange={(e) => onProfileChange(e.target.value)}
-            className="w-full text-sm bg-sidebar-accent text-sidebar-foreground rounded-md px-2 py-1.5 border border-sidebar-border focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">No profile selected</option>
-            {profiles.filter((p) => p.status === "active" || p.status === "training").map((p) => (
-              <option key={p.id} value={p.id}>{p.name} ({p.completeness}%)</option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Profile selector */}
+      <div className={cn(
+        "border-b border-sidebar-border",
+        collapsed ? "flex justify-center p-2" : "p-3"
+      )}>
+        <ProfileSelector
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onProfileChange={onProfileChange}
+          collapsed={collapsed}
+        />
+      </div>
 
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-1">
