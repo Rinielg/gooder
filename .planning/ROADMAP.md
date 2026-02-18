@@ -67,12 +67,12 @@ Plans:
   3. The active page is visually indicated in sidebar navigation (distinct background/color on the current route link)
   4. Nested pages display breadcrumb navigation showing the hierarchy (e.g., Profiles > Brand Name > Training)
   5. Every dashboard page uses a consistent PageContainer wrapper with uniform padding and max-width, plus a PageHeader with title and optional actions
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md -- Collapsible sidebar with hooks, profile selector popover, and active nav indicators
+- [ ] 03-02-PLAN.md -- PageContainer, PageHeader, and dynamic Breadcrumbs components
+- [ ] 03-03-PLAN.md -- Mobile Sheet drawer navigation and responsive dashboard layout
 
 ### Phase 4: Auth Pages
 **Goal**: Login and register pages look intentionally designed and premium while preserving all existing auth behavior
