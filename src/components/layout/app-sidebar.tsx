@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSidebarState } from "@/hooks/use-sidebar-state";
 import {
   MessageSquare, Mic2, FileText, Target, BookOpen,
   Archive, Settings, LogOut, ChevronLeft, ChevronRight, Zap,
@@ -34,7 +34,7 @@ export function AppSidebar({ workspace, profiles, activeProfileId, onProfileChan
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed, mounted } = useSidebarState();
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -42,25 +42,40 @@ export function AppSidebar({ workspace, profiles, activeProfileId, onProfileChan
     router.refresh();
   }
 
+  // Loading state placeholder to prevent layout shift
+  if (!mounted) {
+    return (
+      <aside className="flex flex-col h-screen border-r border-sidebar-border bg-sidebar w-[256px] animate-pulse" />
+    );
+  }
+
   return (
     <aside className={cn(
-      "flex flex-col h-screen border-r border-sidebar-border bg-sidebar transition-all duration-200",
-      collapsed ? "w-16" : "w-64"
+      "relative flex flex-col h-screen border-r border-sidebar-border bg-sidebar transition-all duration-200 ease-in-out",
+      collapsed ? "w-16" : "w-[256px]"
     )}>
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        {!collapsed && (
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-4 h-4 text-primary" />
-            </div>
-            <p className="text-sm font-semibold truncate text-sidebar-foreground">
-              {workspace?.name || "Workspace"}
-            </p>
-          </div>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
+      {/* Floating edge toggle handle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full border bg-background shadow-md"
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </Button>
+
+      {/* Workspace header */}
+      <div className="flex items-center gap-2 p-4 border-b border-sidebar-border min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Zap className="w-4 h-4 text-primary" />
+        </div>
+        <p className={cn(
+          "text-sm font-semibold truncate text-sidebar-foreground transition-opacity duration-200",
+          collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+        )}>
+          {workspace?.name || "Workspace"}
+        </p>
       </div>
 
       {!collapsed && (
@@ -92,7 +107,12 @@ export function AppSidebar({ workspace, profiles, activeProfileId, onProfileChan
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}>
                   <item.icon className="h-4 w-4 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  <span className={cn(
+                    "transition-opacity duration-200",
+                    collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+                  )}>
+                    {item.label}
+                  </span>
                 </div>
               </Link>
             );
@@ -109,7 +129,12 @@ export function AppSidebar({ workspace, profiles, activeProfileId, onProfileChan
           )}
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
-          {!collapsed && <span>Sign out</span>}
+          <span className={cn(
+            "transition-opacity duration-200",
+            collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+          )}>
+            Sign out
+          </span>
         </button>
       </div>
     </aside>
