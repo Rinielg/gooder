@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { MobileNav } from "@/components/layout/mobile-nav";
+import { MobileTopBar } from "@/components/layout/mobile-top-bar";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import type { BrandProfile, Workspace } from "@/types";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +13,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const supabase = createClient();
+  const isMobile = useMediaQuery("(max-width: 1023px)");
 
   function handleProfileChange(id: string) {
     const profileId = id || null;
@@ -89,6 +94,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // Mobile layout: top bar + drawer + main content
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <MobileTopBar onMenuClick={() => setMobileNavOpen(true)} />
+        <MobileNav
+          open={mobileNavOpen}
+          onOpenChange={setMobileNavOpen}
+          workspace={workspace}
+          profiles={profiles}
+          activeProfileId={activeProfileId}
+          onProfileChange={handleProfileChange}
+        />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    );
+  }
+
+  // Desktop layout: sidebar + main content
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar
@@ -97,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         activeProfileId={activeProfileId}
         onProfileChange={handleProfileChange}
       />
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
