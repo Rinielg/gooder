@@ -50,12 +50,12 @@ Plans:
   3. A skeleton loading component exists that matches content layout shape and can replace any spinner-based loading state
   4. An EmptyState component exists with icon, heading, description, and CTA button -- usable on any list page
   5. Sonner toast notifications render with the new design system colors and typography
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Install all 12 shadcn/UI primitives via CLI and react-hook-form
+- [ ] 02-02-PLAN.md -- Form validation integration, EmptyState component, and Sonner toast restyling
+- [ ] 02-03-PLAN.md -- Skeleton loading variants (CardSkeleton, TableSkeleton, FormSkeleton)
 
 ### Phase 3: App Shell & Navigation
 **Goal**: Users navigate the app through a polished, responsive sidebar with clear hierarchy indicators and consistent page framing
