@@ -53,6 +53,7 @@ Progress: [████████░░] 76%
 | Phase 03 P01 | 196 | 2 tasks | 4 files |
 | Phase 04 P01 | 10 min | 2 tasks | 2 files |
 | Phase 04 P02 | 5 min | 2 tasks | 1 files |
+| Phase 05 P01 | 2 min | 2 tasks | 2 files |
 | Phase 05 P04 | 1 min | 1 task | 1 files |
 
 ## Accumulated Context
@@ -86,6 +87,9 @@ Recent decisions affecting current work:
 - [Phase 04-01]: Auth pages own full-page layout — no PageContainer, no layout.tsx in (auth) group
 - [Phase 04-02]: workspaceName is optional in Zod schema — fallback to email prefix + "'s Workspace" handled in onSubmit, not schema validation
 - [Phase 04-02]: autoComplete="organization" for workspace name field as semantic HTML complement
+- [Phase 05-01]: Feature components live in src/components/features/{feature}/ directory
+- [Phase 05-01]: ProfileCard is pure presentational — no state, no data fetching; extracted from inline page markup
+- [Phase 05-01]: CardSkeleton with className='grid-cols-1' for list-layout loading states on feature pages
 - [Phase 05-04]: shadcn Tabs with defaultValue='workspace' separates settings into Workspace and Account sections
 - [Phase 05-04]: RHF workspaceForm and passwordForm replace all useState form fields in settings page
 - [Phase 05-04]: FormSkeleton fields={3} replaces Loader2 spinner in settings loading state
@@ -104,5 +108,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 05-04-PLAN.md (Settings Page Tabs Redesign)
+Stopped at: Completed 05-01-PLAN.md (Profiles List Page & ProfileCard)
 Resume file: None
