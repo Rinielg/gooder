@@ -1,32 +1,41 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Mic2, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Mic2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { BrandProfile, ProfileStatus } from "@/types";
-import { cn } from "@/lib/utils";
+import type { BrandProfile } from "@/types";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
+import { CardSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Form } from "@/components/ui/form";
+import { FormInput, FormErrorSummary } from "@/components/ui/form-field";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ProfileCard } from "@/components/features/profiles/profile-card";
 
-const statusColors: Record<ProfileStatus, string> = {
-  draft: "outline",
-  training: "warning",
-  active: "success",
-  archived: "secondary",
-};
+const createSchema = z.object({
+  name: z.string().min(1, "Profile name is required"),
+})
+type CreateValues = z.infer<typeof createSchema>
 
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const supabase = createClient();
+
+  const form = useForm<CreateValues>({
+    resolver: zodResolver(createSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
 
   const loadProfiles = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -53,8 +62,7 @@ export default function ProfilesPage() {
 
   useEffect(() => { loadProfiles(); }, [loadProfiles]);
 
-  async function createProfile() {
-    if (!newName.trim()) return;
+  async function onSubmit(values: CreateValues) {
     setCreating(true);
 
     try {
@@ -78,7 +86,7 @@ export default function ProfilesPage() {
 
       const { error } = await supabase.from("brand_profiles").insert({
         workspace_id: membership.workspace_id,
-        name: newName.trim(),
+        name: values.name.trim(),
         status: "draft",
         completeness: 0,
         profile_data: {},
@@ -90,7 +98,7 @@ export default function ProfilesPage() {
       if (error) throw error;
 
       toast.success("Profile created");
-      setNewName("");
+      form.reset();
       setShowCreate(false);
       loadProfiles();
     } catch {
@@ -102,103 +110,66 @@ export default function ProfilesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
+      <PageContainer>
+        <PageHeader title="Brand Profiles" />
+        <div className="mt-8">
+          <CardSkeleton count={3} className="grid-cols-1" />
+        </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Brand Profiles</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage your brand voice profiles ({profiles.length}/4)
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)} disabled={profiles.length >= 4}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Profile
-        </Button>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Brand Profiles"
+        actions={
+          <Button onClick={() => setShowCreate(true)} disabled={profiles.length >= 4}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Profile
+          </Button>
+        }
+      />
+      <p className="text-sm text-muted-foreground mt-1">Manage your brand voice profiles ({profiles.length}/4)</p>
 
       {showCreate && (
-        <Card>
+        <Card className="mt-6">
           <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Label htmlFor="profileName">Profile name</Label>
-                <Input
-                  id="profileName"
-                  placeholder="e.g., My Brand Voice"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && createProfile()}
-                />
-              </div>
-              <div className="flex items-end gap-2">
-                <Button onClick={createProfile} disabled={creating || !newName.trim()}>
-                  {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Create
-                </Button>
-                <Button variant="outline" onClick={() => setShowCreate(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormErrorSummary />
+                <FormInput name="name" label="Profile name">
+                  <Input placeholder="e.g., My Brand Voice" />
+                </FormInput>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={creating}>
+                    {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Create
+                  </Button>
+                  <Button variant="outline" type="button" onClick={() => { setShowCreate(false); form.reset(); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4">
+      <div className="mt-6 grid gap-4">
         {profiles.map((profile) => (
-          <Link key={profile.id} href={`/profiles/${profile.id}`}>
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Mic2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{profile.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={statusColors[profile.status] as any}>
-                        {profile.status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {profile.completeness}% complete
-                      </span>
-                      {profile.active_modules?.length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {profile.active_modules.length} modules
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
+          <ProfileCard key={profile.id} profile={profile} />
         ))}
-
         {profiles.length === 0 && (
-          <Card>
-            <CardContent className="flex flex-col items-center py-12 text-center">
-              <Mic2 className="w-12 h-12 text-muted-foreground/50 mb-4" />
-              <h3 className="font-medium mb-1">No brand profiles yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create your first brand voice profile to start generating on-brand content.
-              </p>
-              <Button onClick={() => setShowCreate(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create your first profile
-              </Button>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Mic2}
+            heading="No brand profiles yet"
+            description="Create your first brand voice profile to start generating on-brand content."
+            actionLabel="Create your first profile"
+            onAction={() => setShowCreate(true)}
+          />
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
