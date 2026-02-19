@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { BrandProfile } from "@/types";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".md", ".txt"];
 const ACCEPTED_MIME_TYPES = [
@@ -248,15 +249,22 @@ export default function TrainProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="flex flex-col h-full">
+        <div className="px-6 py-3 border-b border-border">
+          <Breadcrumbs />
+          <div className="flex items-center justify-between mt-2">
+            <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-6 w-24 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="h-2 mt-3 bg-muted rounded-full" />
+        </div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col h-full items-center justify-center">
         <p className="text-muted-foreground">Profile not found</p>
       </div>
     );
@@ -266,6 +274,7 @@ export default function TrainProfilePage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-6 py-3 border-b border-border space-y-3">
+        <Breadcrumbs overrides={{ [profileId]: profile.name }} />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
