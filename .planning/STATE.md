@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 5 of 8 (Feature Pages & Settings)
-Plan: 4 of 5 in current phase
-Status: In Progress
-Last activity: 2026-02-19 -- Completed 05-03-PLAN.md (Batch Management Pages: Objectives, Definitions, Outputs)
+Plan: 5 of 5 in current phase
+Status: Phase Complete
+Last activity: 2026-02-19 -- Completed 05-05-PLAN.md (Profile Detail & Training Page)
 
-Progress: [████████░░] 76%
+Progress: [█████████░] 81%
 
 ## Performance Metrics
 
@@ -31,11 +31,11 @@ Progress: [████████░░] 76%
 | 02 | 2 | 5 min | 2.5 min |
 | 03 | 2 | 5 min | 2.3 min |
 | 04 | 2 | 15 min | 7.5 min |
-| 05 | 1 | 1 min | 1.0 min |
+| 05 | 5 | 14 min | 2.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3 min), 03-03 (2 min), 04-01 (10 min), 04-02 (5 min), 05-04 (1 min)
-- Trend: Single-file rewrites execute very fast; form-heavy pages benefit from established RHF patterns
+- Last 5 plans: 04-01 (10 min), 04-02 (5 min), 05-04 (1 min), 05-03 (3 min), 05-05 (7 min)
+- Trend: Two-file rewrites with complex state changes ~7 min; form-heavy pages benefit from established RHF patterns
 
 *Updated after each plan completion*
 
@@ -57,6 +57,7 @@ Progress: [████████░░] 76%
 | Phase 05 P04 | 1 min | 1 task | 1 files |
 | Phase 05 P02 | 1 | 1 tasks | 1 files |
 | Phase 05 P03 | 3 min | 2 tasks | 3 files |
+| Phase 05 P05 | 7 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Recent decisions affecting current work:
 - [Phase 05-03]: AlertDialog + deleteTarget pattern established as standard delete confirmation across management pages
 - [Phase 05-03]: Definitions list migrated to shadcn Table (Term | Definition | delete) for improved scannability over card-per-row
 - [Phase 05-03]: CardSkeleton className='grid-cols-1' for single-column card lists; TableSkeleton for tabular data
+- [Phase 05]: Training page uses inline pulse skeleton not FormSkeleton+PageContainer — preserves flex flex-col h-full layout for chat interface
+- [Phase 05]: AlertDialog replaces window.confirm() in profile detail: deleteProfileOpen (boolean) for profile delete, deleteDocTarget (string|null) for training doc delete
+- [Phase 05]: Breadcrumbs overrides={{ [id]: entity.name }} pattern validated on profile detail and training pages
 
 ### Pending Todos
 
@@ -116,5 +120,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 05-03-PLAN.md (Batch Management Pages: Objectives, Definitions, Outputs)
+Stopped at: Completed 05-05-PLAN.md (Profile Detail & Training Page) — Phase 05 complete
 Resume file: None
