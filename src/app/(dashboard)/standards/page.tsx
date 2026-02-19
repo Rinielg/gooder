@@ -1,11 +1,37 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Form } from "@/components/ui/form";
+import { FormInput, FormErrorSummary } from "@/components/ui/form-field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
+import { CardSkeleton } from "@/components/ui/skeletons";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Plus, Trash2, Loader2, FileText, Check, X,
   Pencil, ChevronDown, ChevronUp,
@@ -23,22 +49,32 @@ const CATEGORIES: { value: StandardCategory; label: string }[] = [
   { value: "general", label: "General" },
 ];
 
+const standardSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  category: z.enum(["all", "ux_journey", "email", "sms", "push", "general"] as const),
+});
+type StandardFormValues = z.infer<typeof standardSchema>;
+
 export default function StandardsPage() {
   const [standards, setStandards] = useState<PlatformStandard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const supabase = createClient();
 
-  // Form state
-  const [formName, setFormName] = useState("");
-  const [formCategory, setFormCategory] = useState<StandardCategory>("general");
+  // Form state — rules array stays as useState, NOT useFieldArray
   const [formRules, setFormRules] = useState<string[]>([""]);
-  const [saving, setSaving] = useState(false);
 
-  // Workspace ID cache
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const form = useForm<StandardFormValues>({
+    resolver: zodResolver(standardSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    defaultValues: { name: "", category: "general" },
+  });
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -80,8 +116,7 @@ export default function StandardsPage() {
 
   // ── Form helpers ────────────────────────────────────────────────────────
   function resetForm() {
-    setFormName("");
-    setFormCategory("general");
+    form.reset({ name: "", category: "general" });
     setFormRules([""]);
     setEditingId(null);
     setShowForm(false);
@@ -93,8 +128,7 @@ export default function StandardsPage() {
   }
 
   function openEditForm(std: PlatformStandard) {
-    setFormName(std.name);
-    setFormCategory(std.category);
+    form.reset({ name: std.name, category: std.category });
     setFormRules(getRules(std).length > 0 ? getRules(std) : [""]);
     setEditingId(std.id);
     setShowForm(true);
@@ -113,12 +147,7 @@ export default function StandardsPage() {
   }
 
   // ── Save (create or update) ─────────────────────────────────────────────
-  async function handleSave() {
-    if (!formName.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-
+  async function onSubmit(values: StandardFormValues) {
     const rules = formRules.map((r) => r.trim()).filter(Boolean);
     if (rules.length === 0) {
       toast.error("Add at least one rule");
@@ -138,8 +167,8 @@ export default function StandardsPage() {
         const { error } = await supabase
           .from("platform_standards")
           .update({
-            name: formName.trim(),
-            category: formCategory,
+            name: values.name,
+            category: values.category,
             content: { rules },
             updated_at: new Date().toISOString(),
           })
@@ -153,9 +182,9 @@ export default function StandardsPage() {
           .from("platform_standards")
           .insert({
             workspace_id: workspaceId,
-            name: formName.trim(),
+            name: values.name,
             type: "custom" as const,
-            category: formCategory,
+            category: values.category,
             content: { rules },
             is_active: true,
           });
@@ -186,124 +215,121 @@ export default function StandardsPage() {
   }
 
   // ── Delete ──────────────────────────────────────────────────────────────
-  async function deleteStandard(id: string) {
-    if (!confirm("Delete this custom standard?")) return;
+  async function confirmDelete(id: string) {
     const { error } = await supabase
       .from("platform_standards")
       .delete()
       .eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
     toast.success("Deleted");
+    setDeleteTarget(null);
     load();
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
+      <PageContainer>
+        <PageHeader title="Platform Standards & Rules" />
+        <div className="mt-8">
+          <CardSkeleton count={3} className="grid-cols-1" />
+        </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 overflow-y-auto h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Platform Standards & Rules</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Best practices and rules applied to all content generation
-          </p>
-        </div>
-        {!showForm && (
-          <Button onClick={openNewForm}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Standard
-          </Button>
-        )}
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Platform Standards & Rules"
+        actions={
+          !showForm && (
+            <Button onClick={openNewForm}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Standard
+            </Button>
+          )
+        }
+      />
+      <p className="text-sm text-muted-foreground mt-1 mb-6">
+        Best practices and rules applied to all content generation
+      </p>
 
       {/* Create / Edit Form */}
       {showForm && (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <h2 className="font-semibold text-sm">
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <h2 className="font-semibold text-sm mb-4">
               {editingId ? "Edit Standard" : "New Custom Standard"}
             </h2>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormErrorSummary />
+                <FormInput name="name" label="Name">
+                  <Input placeholder="e.g. Error Message Guidelines" />
+                </FormInput>
 
-            {/* Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Name</label>
-              <Input
-                placeholder="e.g. Error Message Guidelines"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
+                {/* Category — shadcn Select via Controller (NOT FormInput cloneElement) */}
+                <Controller
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Category</label>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                />
 
-            {/* Category */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Category</label>
-              <select
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value as StandardCategory)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Dynamic Rules */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Rules</label>
-              <div className="space-y-2">
-                {formRules.map((rule, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-5 text-right flex-shrink-0">
-                      {i + 1}.
-                    </span>
-                    <Input
-                      placeholder={`Rule ${i + 1}...`}
-                      value={rule}
-                      onChange={(e) => updateRule(i, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addRule();
-                        }
-                      }}
-                    />
-                    {formRules.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={() => removeRule(i)}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
+                {/* Dynamic Rules — unchanged useState pattern */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Rules</label>
+                  <div className="space-y-2">
+                    {formRules.map((rule, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-5 text-right flex-shrink-0">{i + 1}.</span>
+                        <Input
+                          placeholder={`Rule ${i + 1}...`}
+                          value={rule}
+                          onChange={(e) => updateRule(i, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addRule(); } }}
+                        />
+                        {formRules.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
+                            onClick={() => removeRule(i)}
+                            type="button"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <Button variant="ghost" size="sm" className="text-xs mt-1" onClick={addRule}>
-                <Plus className="w-3 h-3 mr-1" />
-                Add rule
-              </Button>
-            </div>
+                  <Button variant="ghost" size="sm" className="text-xs mt-1" type="button" onClick={addRule}>
+                    <Plus className="w-3 h-3 mr-1" />Add rule
+                  </Button>
+                </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-2">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingId ? "Update Standard" : "Create Standard"}
-              </Button>
-              <Button variant="ghost" onClick={resetForm}>
-                Cancel
-              </Button>
-            </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {editingId ? "Update Standard" : "Create Standard"}
+                  </Button>
+                  <Button variant="ghost" type="button" onClick={resetForm}>Cancel</Button>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       )}
@@ -357,8 +383,7 @@ export default function StandardsPage() {
                             </>
                           ) : (
                             <>
-                              <ChevronDown className="w-3 h-3" /> +{rules.length - 3} more
-                              rules
+                              <ChevronDown className="w-3 h-3" /> +{rules.length - 3} more rules
                             </>
                           )}
                         </button>
@@ -392,7 +417,7 @@ export default function StandardsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive"
-                          onClick={() => deleteStandard(std.id)}
+                          onClick={() => setDeleteTarget(std.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -404,12 +429,36 @@ export default function StandardsPage() {
             </Card>
           );
         })}
+
         {standards.length === 0 && (
-          <p className="text-center text-muted-foreground text-sm py-8">
-            No standards yet. Create one above.
-          </p>
+          <EmptyState
+            icon={FileText}
+            heading="No standards yet"
+            description="Create custom writing rules applied to all generated content."
+            actionLabel="Create your first standard"
+            onAction={openNewForm}
+          />
         )}
       </div>
-    </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this standard?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && confirmDelete(deleteTarget)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </PageContainer>
   );
 }
