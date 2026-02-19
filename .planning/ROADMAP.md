@@ -99,14 +99,14 @@ Plans:
   4. Every list page shows skeleton loading states during data fetch and an EmptyState with CTA button when no data exists
   5. Every form across all feature pages shows inline validation errors below invalid fields (not only via toast/modal)
   6. Settings page renders with tabbed layout (shadcn Tabs) clearly separating workspace and account sections
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
-- [ ] 05-04: TBD
-- [ ] 05-05: TBD
+- [ ] 05-01-PLAN.md — Profiles list page + ProfileCard component
+- [ ] 05-02-PLAN.md — Standards management page (RHF, shadcn Select, AlertDialog)
+- [ ] 05-03-PLAN.md — Objectives + Definitions + Outputs (batched simple list pages)
+- [ ] 05-04-PLAN.md — Settings page (Tabs layout, two RHF forms)
+- [ ] 05-05-PLAN.md — Profile detail page + training page (breadcrumbs, AlertDialog, critical-risk upload preservation)
 
 ### Phase 6: Chat Interface Core
 **Goal**: The primary workspace (chat) renders with the new design system while preserving all streaming, scrolling, and rendering behavior
