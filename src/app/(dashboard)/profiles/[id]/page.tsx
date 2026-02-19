@@ -7,10 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, GraduationCap, Loader2, Play, Trash2, FileText, FileType2, File } from "lucide-react";
+import { GraduationCap, Loader2, Play, Trash2, FileText, FileType2, File } from "lucide-react";
 import { toast } from "sonner";
 import type { BrandProfile, TrainingDocument } from "@/types";
 import { cn } from "@/lib/utils";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { FormSkeleton } from "@/components/ui/skeletons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ProfileDetailPage() {
   const params = useParams();
@@ -19,6 +33,8 @@ export default function ProfileDetailPage() {
   const [trainingDocs, setTrainingDocs] = useState<TrainingDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [deleteProfileOpen, setDeleteProfileOpen] = useState(false);
+  const [deleteDocTarget, setDeleteDocTarget] = useState<string | null>(null);
   const supabase = createClient();
 
   const loadProfile = useCallback(async () => {
@@ -63,7 +79,6 @@ export default function ProfileDetailPage() {
 
   async function deleteProfile() {
     if (!profile) return;
-    if (!confirm("Delete this profile? This cannot be undone.")) return;
 
     const { error } = await supabase
       .from("brand_profiles")
@@ -80,7 +95,6 @@ export default function ProfileDetailPage() {
   }
 
   async function deleteTrainingDoc(docId: string) {
-    if (!confirm("Delete this training document?")) return;
     setDeletingDocId(docId);
 
     try {
@@ -107,63 +121,63 @@ export default function ProfileDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
+      <PageContainer>
+        <PageHeader title="Profile" breadcrumbs={<Breadcrumbs />} />
+        <div className="mt-8">
+          <FormSkeleton fields={4} />
+        </div>
+      </PageContainer>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Profile not found</p>
-      </div>
+      <PageContainer>
+        <PageHeader title="Profile not found" breadcrumbs={<Breadcrumbs />} />
+        <p className="text-muted-foreground mt-4">This profile could not be found.</p>
+      </PageContainer>
     );
   }
 
   const pd = profile.profile_data;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 overflow-y-auto h-full">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/profiles")}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={profile.status === "active" ? "success" : "outline"}>
-                {profile.status}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {profile.completeness}% complete
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {profile.status !== "active" && profile.completeness >= 80 && (
-            <Button onClick={activateProfile}>
-              <Play className="w-4 h-4 mr-2" />
-              Activate
+    <PageContainer>
+      <PageHeader
+        title={profile.name}
+        breadcrumbs={
+          <Breadcrumbs overrides={{ [params.id as string]: profile.name }} />
+        }
+        actions={
+          <div className="flex gap-2">
+            {profile.status !== "active" && profile.completeness >= 80 && (
+              <Button onClick={activateProfile}>
+                <Play className="w-4 h-4 mr-2" />
+                Activate
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => router.push(`/profiles/${profile.id}/train`)}>
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Train Profile
             </Button>
-          )}
-          <Button variant="outline" onClick={() => router.push(`/profiles/${profile.id}/train`)}>
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Train Profile
-          </Button>
-          <Button variant="outline" onClick={() => {
-            localStorage.setItem("bvp_active_profile", profile.id);
-            router.push("/chat");
-            toast.success("Profile selected — start chatting");
-          }}>
-            Use in Chat
-          </Button>
-          <Button variant="destructive" size="icon" onClick={deleteProfile}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+            <Button variant="outline" onClick={() => {
+              localStorage.setItem("bvp_active_profile", profile.id);
+              router.push("/chat");
+              toast.success("Profile selected — start chatting");
+            }}>
+              Use in Chat
+            </Button>
+            <Button variant="destructive" size="icon" onClick={() => setDeleteProfileOpen(true)}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        }
+      />
+      <div className="flex items-center gap-2 mt-2 mb-6">
+        <Badge variant={profile.status === "active" ? "success" : "outline"}>
+          {profile.status}
+        </Badge>
+        <span className="text-sm text-muted-foreground">{profile.completeness}% complete</span>
       </div>
 
       {/* Voice Pillars */}
@@ -200,7 +214,7 @@ export default function ProfileDetailPage() {
 
       {/* Voice Spectrum */}
       {pd?.voice_identity?.spectrum && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-lg">Voice Spectrum</CardTitle>
           </CardHeader>
@@ -225,7 +239,7 @@ export default function ProfileDetailPage() {
 
       {/* Active Modules */}
       {profile.active_modules?.length > 0 && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-lg">Active Modules</CardTitle>
           </CardHeader>
@@ -240,7 +254,7 @@ export default function ProfileDetailPage() {
       )}
 
       {/* Training Documents */}
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg">Training Documents</CardTitle>
           <CardDescription>Uploaded files used to extract brand voice attributes</CardDescription>
@@ -271,7 +285,7 @@ export default function ProfileDetailPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteTrainingDoc(doc.id)}
+                        onClick={() => setDeleteDocTarget(doc.id)}
                         disabled={deletingDocId === doc.id}
                       >
                         {deletingDocId === doc.id ? (
@@ -294,7 +308,7 @@ export default function ProfileDetailPage() {
       </Card>
 
       {/* Training Sources */}
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg">Training Sources</CardTitle>
           <CardDescription>Documents and conversations used to train this profile</CardDescription>
@@ -321,6 +335,46 @@ export default function ProfileDetailPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      {/* Delete Profile AlertDialog */}
+      <AlertDialog open={deleteProfileOpen} onOpenChange={setDeleteProfileOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this profile?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{profile.name}&rdquo; and all associated data. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteProfile}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Profile
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Training Doc AlertDialog */}
+      <AlertDialog open={!!deleteDocTarget} onOpenChange={(open) => !open && setDeleteDocTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this training document?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (deleteDocTarget) { deleteTrainingDoc(deleteDocTarget); setDeleteDocTarget(null); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </PageContainer>
   );
 }
