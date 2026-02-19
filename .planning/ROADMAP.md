@@ -82,10 +82,11 @@ Plans:
   1. Login page renders with new design system typography, colors, spacing, and shadcn/UI form components
   2. Register page renders with new design system typography, colors, spacing, and shadcn/UI form components
   3. All existing auth flows work identically: login redirects to dashboard, register creates account, invalid credentials show errors, Supabase session persists across refresh
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md -- Login page redesign (split-screen, brand panel, screenshot asset, RHF form)
+- [ ] 04-02-PLAN.md -- Register page redesign (same split-screen structure, 3-field RHF form, workspace API call preserved)
 
 ### Phase 5: Feature Pages & Settings
 **Goal**: All management pages (profiles, standards, objectives, definitions, outputs, settings) use the new design system with consistent patterns for lists, forms, loading, and empty states
