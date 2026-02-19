@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 Phase: 5 of 8 (Feature Pages & Settings)
 Plan: 4 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-19 -- Completed 05-04-PLAN.md (Settings Page Tabs Redesign)
+Last activity: 2026-02-19 -- Completed 05-03-PLAN.md (Batch Management Pages: Objectives, Definitions, Outputs)
 
 Progress: [████████░░] 76%
 
@@ -56,6 +56,7 @@ Progress: [████████░░] 76%
 | Phase 05 P01 | 2 min | 2 tasks | 2 files |
 | Phase 05 P04 | 1 min | 1 task | 1 files |
 | Phase 05 P02 | 1 | 1 tasks | 1 files |
+| Phase 05 P03 | 3 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Dynamic rules array stays as useState — not useFieldArray; RHF validates name/category only
 - [Phase 05]: shadcn Select requires Controller wrapper with onValueChange pattern — not FormInput cloneElement
 - [Phase 05]: deleteTarget state (string | null) drives AlertDialog: open={!!deleteTarget} replaces window.confirm()
+- [Phase 05-03]: AlertDialog + deleteTarget pattern established as standard delete confirmation across management pages
+- [Phase 05-03]: Definitions list migrated to shadcn Table (Term | Definition | delete) for improved scannability over card-per-row
+- [Phase 05-03]: CardSkeleton className='grid-cols-1' for single-column card lists; TableSkeleton for tabular data
 
 ### Pending Todos
 
@@ -112,5 +116,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 05-02-PLAN.md (Standards Page Redesign)
+Stopped at: Completed 05-03-PLAN.md (Batch Management Pages: Objectives, Definitions, Outputs)
 Resume file: None
