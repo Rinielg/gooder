@@ -55,6 +55,7 @@ Progress: [████████░░] 76%
 | Phase 04 P02 | 5 min | 2 tasks | 1 files |
 | Phase 05 P01 | 2 min | 2 tasks | 2 files |
 | Phase 05 P04 | 1 min | 1 task | 1 files |
+| Phase 05 P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 05-04]: RHF workspaceForm and passwordForm replace all useState form fields in settings page
 - [Phase 05-04]: FormSkeleton fields={3} replaces Loader2 spinner in settings loading state
 - [Phase 05-04]: workspaceForm.reset() in load() callback populates RHF-controlled workspace name field from Supabase
+- [Phase 05]: Dynamic rules array stays as useState — not useFieldArray; RHF validates name/category only
+- [Phase 05]: shadcn Select requires Controller wrapper with onValueChange pattern — not FormInput cloneElement
+- [Phase 05]: deleteTarget state (string | null) drives AlertDialog: open={!!deleteTarget} replaces window.confirm()
 
 ### Pending Todos
 
@@ -108,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 05-01-PLAN.md (Profiles List Page & ProfileCard)
+Stopped at: Completed 05-02-PLAN.md (Standards Page Redesign)
 Resume file: None
