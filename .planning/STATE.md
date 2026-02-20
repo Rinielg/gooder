@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 6 of 8 (Chat Interface Core)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-20 -- Completed 06-02-PLAN.md (MemoizedMarkdown and CodeBlock components)
+Last activity: 2026-02-20 -- Completed 06-03-PLAN.md (Message rendering redesign with sender labels, MemoizedMarkdown, scroll lock)
 
 Progress: [█████████░] 83%
 
@@ -60,6 +60,7 @@ Progress: [█████████░] 83%
 | Phase 05 P05 | 7 | 2 tasks | 2 files |
 | Phase 06 P01 | 2 min | 3 tasks | 4 files |
 | Phase 06 P02 | 135 | 2 tasks | 1 files |
+| Phase 06 P03 | 219 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,11 @@ Recent decisions affecting current work:
 - [Phase 06]: github-light theme for code blocks, language label top-left, copy button top-right
 - [Phase 06]: MARKDOWN_COMPONENTS at module scope prevents reference churn; isInlineCode(node) for accurate inline detection
 - [Phase 06]: Block-level memoization pattern: parseMarkdownBlocks + MarkdownBlock memoization for streaming performance
+- [Phase 06-03]: Sender labels ('You'/'Gooder') replace avatar icons; user messages use bg-zinc-100, AI messages use bg-white + shadow-elevation-1
+- [Phase 06-03]: prevStatusRef initialized as useRef<string>('idle') — cannot reference status before useChat declaration
+- [Phase 06-03]: Typing indicator uses status=submitted (not isLoading) — bouncing dots only for pre-first-token phase
+- [Phase 06-03]: Scoring card indent changed from ml-11 to ml-0 — avatars removed, no indent needed
+- [Phase 06-03]: PHASE 7 comment markers added to scoring/Figma JSX for boundary clarity
 
 ### Pending Todos
 
@@ -123,10 +129,10 @@ None yet.
 
 - ~~Figma token export pipeline not validated end-to-end (research gap).~~ RESOLVED: Manual CSS variable authoring from Figma visual specs is the chosen approach. Tokens are mirrored in both systems.
 - ~~Geist vs Inter font decision still open.~~ RESOLVED: Geist font installed and configured in 01-02.
-- Chat page (1012 lines) is highest risk. Migrated last in Phases 6-7.
+- ~~Chat page (1012 lines) is highest risk. Migrated last in Phases 6-7.~~ Phase 6 message area fully redesigned; only input area remains (06-04).
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 06-02-PLAN.md (MemoizedMarkdown and CodeBlock components)
+Stopped at: Completed 06-03-PLAN.md (Message rendering redesign)
 Resume file: None
