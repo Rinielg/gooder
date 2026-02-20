@@ -61,3 +61,104 @@ export function CodeBlock({
     </div>
   );
 }
+
+// ── parseMarkdownBlocks ─────────────────────────────────────────────────────
+// Splits markdown content into paragraph-level blocks for memoization.
+// Each empty line creates a new block boundary.
+
+function parseMarkdownBlocks(content: string): string[] {
+  const lines = content.split("\n");
+  const blocks: string[] = [];
+  let current = "";
+
+  for (const line of lines) {
+    current += line + "\n";
+    if (line === "") {
+      blocks.push(current);
+      current = "";
+    }
+  }
+  if (current.trim()) blocks.push(current);
+  return blocks;
+}
+
+// ── MARKDOWN_COMPONENTS ─────────────────────────────────────────────────────
+// Defined at module scope to prevent new object reference on every render.
+
+const MARKDOWN_COMPONENTS = {
+  code: CodeBlock,
+  p: ({ children }: { children: React.ReactNode }) => (
+    <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
+  ),
+  h1: ({ children }: { children: React.ReactNode }) => (
+    <h1 className="text-xl font-semibold mb-3 mt-4 first:mt-0">{children}</h1>
+  ),
+  h2: ({ children }: { children: React.ReactNode }) => (
+    <h2 className="text-lg font-semibold mb-2 mt-4 first:mt-0">{children}</h2>
+  ),
+  h3: ({ children }: { children: React.ReactNode }) => (
+    <h3 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h3>
+  ),
+  ul: ({ children }: { children: React.ReactNode }) => (
+    <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>
+  ),
+  ol: ({ children }: { children: React.ReactNode }) => (
+    <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>
+  ),
+  li: ({ children }: { children: React.ReactNode }) => (
+    <li className="leading-relaxed">{children}</li>
+  ),
+  blockquote: ({ children }: { children: React.ReactNode }) => (
+    <blockquote className="border-l-4 border-border pl-4 italic text-muted-foreground mb-3">
+      {children}
+    </blockquote>
+  ),
+  a: ({ href, children }: { href?: string; children: React.ReactNode }) => (
+    <a
+      href={href}
+      className="text-primary underline underline-offset-2 hover:no-underline"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {children}
+    </a>
+  ),
+  strong: ({ children }: { children: React.ReactNode }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+} as Parameters<typeof Markdown>[0]["components"];
+
+// ── MarkdownBlock ───────────────────────────────────────────────────────────
+// Memoized single block — custom equality prevents re-render when content
+// is unchanged (critical for streaming performance).
+
+const MarkdownBlock = memo(
+  function MarkdownBlock({ content }: { content: string }) {
+    return (
+      <Markdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+        {content}
+      </Markdown>
+    );
+  },
+  (prev, next) => prev.content === next.content
+);
+
+// ── MemoizedMarkdown ────────────────────────────────────────────────────────
+// Exported container that splits content into blocks and memoizes each one.
+// The id prop is used in block keys to prevent stale key issues across messages.
+
+export const MemoizedMarkdown = memo(
+  function MemoizedMarkdown({ content, id }: { content: string; id: string }) {
+    const blocks = useMemo(() => parseMarkdownBlocks(content), [content]);
+
+    return (
+      <div className="text-sm">
+        {blocks.map((block, i) => (
+          <MarkdownBlock key={`${id}-block-${i}`} content={block} />
+        ))}
+      </div>
+    );
+  }
+);
+
+MemoizedMarkdown.displayName = "MemoizedMarkdown";
