@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 6 of 8 (Chat Interface Core)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In Progress
-Last activity: 2026-02-20 -- Completed 06-01-PLAN.md (Dependencies & CSS Primitives)
+Last activity: 2026-02-20 -- Completed 06-02-PLAN.md (MemoizedMarkdown and CodeBlock components)
 
 Progress: [█████████░] 83%
 
@@ -59,6 +59,7 @@ Progress: [█████████░] 83%
 | Phase 05 P03 | 3 min | 2 tasks | 3 files |
 | Phase 05 P05 | 7 | 2 tasks | 2 files |
 | Phase 06 P01 | 2 min | 3 tasks | 4 files |
+| Phase 06 P02 | 135 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 06-01]: react-markdown@10 is ESM-only; transpilePackages in next.config.js prevents require() of ES Module errors in Next.js 14
 - [Phase 06-01]: streaming-cursor changed from block cursor to pulsing ellipsis with muted-foreground color
 - [Phase 06-01]: CSS animation primitives for chat UI (typing-dot, message-flash) defined globally in globals.css
+- [Phase 06]: github-light theme for code blocks, language label top-left, copy button top-right
+- [Phase 06]: MARKDOWN_COMPONENTS at module scope prevents reference churn; isInlineCode(node) for accurate inline detection
+- [Phase 06]: Block-level memoization pattern: parseMarkdownBlocks + MarkdownBlock memoization for streaming performance
 
 ### Pending Todos
 
@@ -124,5 +128,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 06-01-PLAN.md (Dependencies & CSS Primitives)
+Stopped at: Completed 06-02-PLAN.md (MemoizedMarkdown and CodeBlock components)
 Resume file: None
