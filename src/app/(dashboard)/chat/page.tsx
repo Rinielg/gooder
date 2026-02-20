@@ -7,12 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Send, Loader2, Bot, User, Save, Copy,
+  Send, Square, Loader2, Bot, User, Save, Copy,
   Sparkles, Link2, Zap, ChevronDown, ChevronUp,
   AlertTriangle, RefreshCw, ShieldCheck, ShieldX,
   Layout, Type, Component, Check, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MemoizedMarkdown } from "./markdown-message";
 import { toast } from "sonner";
 import type { OutputType, AdherenceScore } from "@/types";
 
@@ -162,6 +163,14 @@ export default function ChatPage() {
   // Track which message IDs we've already started scoring
   const scoredRef = useRef<Set<string>>(new Set());
 
+  // Scroll lock detection
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
+  // Completion flash
+  const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
+  const prevStatusRef = useRef<string>("idle");
+
   // Figma extraction state
   const [figmaExtraction, setFigmaExtraction] = useState<FigmaExtraction | null>(null);
   const [figmaLoading, setFigmaLoading] = useState(false);
@@ -206,7 +215,7 @@ export default function ChatPage() {
     []
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop } = useChat({
     transport,
     onError: (err) => {
       toast.error(err.message || "Failed to send message");
@@ -285,8 +294,10 @@ export default function ChatPage() {
   }, [isLoading, displayMessages, adherenceScores, scoringIds, scoreMessage]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, adherenceScores]);
+    if (isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, adherenceScores, isAtBottom]);
 
   // ── Toggle details expansion ────────────────────────────────────────
   function toggleExpand(messageId: string) {
@@ -417,6 +428,29 @@ export default function ChatPage() {
     target.style.height = "auto";
     target.style.height = Math.min(target.scrollHeight, 200) + "px";
   }
+
+  function handleScroll() {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    setIsAtBottom(scrollHeight - clientHeight - scrollTop < 50);
+  }
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setIsAtBottom(true);
+  }
+
+  useEffect(() => {
+    if (prevStatusRef.current === "streaming" && status === "ready") {
+      const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+      if (lastAssistant) {
+        setJustCompletedId(lastAssistant.id);
+        setTimeout(() => setJustCompletedId(null), 1000);
+      }
+    }
+    prevStatusRef.current = status;
+  }, [status, messages]);
 
   // ── Save output with adherence score ────────────────────────────────
   async function saveOutput(messageId: string, messageContent: string) {
