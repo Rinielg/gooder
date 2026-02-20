@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** The UI should feel like a premium, modern product -- clean, simple, and functional -- not a default template.
-**Current focus:** Phase 5: Feature Pages & Settings
+**Current focus:** Phase 7: Chat Scoring & Output
 
 ## Current Position
 
-Phase: 6 of 8 (Chat Interface Core)
-Plan: 3 of 4 in current phase
-Status: In Progress
-Last activity: 2026-02-20 -- Completed 06-03-PLAN.md (Message rendering redesign with sender labels, MemoizedMarkdown, scroll lock)
+Phase: 7 of 8 (Chat Scoring & Output)
+Plan: 1 of ? in current phase
+Status: Ready to Start
+Last activity: 2026-02-20 -- Completed 06-04-PLAN.md (Input area redesign + full Phase 6 verification)
 
-Progress: [█████████░] 83%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [█████████░] 83%
 | Phase 06 P01 | 2 min | 3 tasks | 4 files |
 | Phase 06 P02 | 135 | 2 tasks | 1 files |
 | Phase 06 P03 | 219 | 2 tasks | 1 files |
+| Phase 06 P04 | 35 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,9 @@ Recent decisions affecting current work:
 - [Phase 06-03]: Typing indicator uses status=submitted (not isLoading) — bouncing dots only for pre-first-token phase
 - [Phase 06-03]: Scoring card indent changed from ml-11 to ml-0 — avatars removed, no indent needed
 - [Phase 06-03]: PHASE 7 comment markers added to scoring/Figma JSX for boundary clarity
+- [Phase 06-04]: Textarea not disabled during streaming — stop button is cancel mechanism; isLoading (not isStreaming) used for send/stop toggle
+- [Phase 06-04]: Input floated as rounded card (w-[50vw] with shadow) rather than full-width border-t strip for premium feel
+- [Phase 06-04]: layout.tsx merged into single JSX tree — split mobile/desktop returns unmounted children on resize, resetting chat page state
 
 ### Pending Todos
 
@@ -129,10 +133,10 @@ None yet.
 
 - ~~Figma token export pipeline not validated end-to-end (research gap).~~ RESOLVED: Manual CSS variable authoring from Figma visual specs is the chosen approach. Tokens are mirrored in both systems.
 - ~~Geist vs Inter font decision still open.~~ RESOLVED: Geist font installed and configured in 01-02.
-- ~~Chat page (1012 lines) is highest risk. Migrated last in Phases 6-7.~~ Phase 6 message area fully redesigned; only input area remains (06-04).
+- ~~Chat page (1012 lines) is highest risk. Migrated last in Phases 6-7.~~ Phase 6 fully complete and verified. Phase 7 scoring/output work remains.
 
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed 06-03-PLAN.md (Message rendering redesign)
+Stopped at: Completed 06-04-PLAN.md (Input area redesign + full Phase 6 verification)
 Resume file: None
