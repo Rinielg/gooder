@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: App Shell & Navigation** - Redesign sidebar with collapse/expand and mobile drawer, add breadcrumbs, page headers, and consistent layout wrapper
 - [ ] **Phase 4: Auth Pages** - Redesign login and register pages as first end-to-end validation of the new design system
 - [ ] **Phase 5: Feature Pages & Settings** - Redesign all management pages (profiles, standards, objectives, definitions, outputs, settings) with consistent patterns
-- [ ] **Phase 6: Chat Interface Core** - Redesign chat layout, message rendering, streaming behavior, markdown display, copy button, and input area
+- [x] **Phase 6: Chat Interface Core** - Redesign chat layout, message rendering, streaming behavior, markdown display, copy button, and input area (completed 2026-02-20)
 - [ ] **Phase 7: Chat Scoring & Figma Preview** - Redesign adherence score cards with radial progress, dimension expand/collapse, regenerate-with-feedback, and Figma extraction UI
 - [ ] **Phase 8: Polish & Responsive QA** - Add microinteractions, contextual tooltips, keyboard hints, consistent transitions, and responsive testing at all breakpoints
 
@@ -172,7 +172,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 3. App Shell & Navigation | 0/3 | Not started | - |
 | 4. Auth Pages | 0/1 | Not started | - |
 | 5. Feature Pages & Settings | 0/5 | Not started | - |
-| 6. Chat Interface Core | 0/4 | Not started | - |
+| 6. Chat Interface Core | 0/4 | Complete    | 2026-02-20 |
 | 7. Chat Scoring & Figma Preview | 0/2 | Not started | - |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
