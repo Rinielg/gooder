@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["geist"],
+  transpilePackages: ["geist", "react-markdown", "remark-gfm"],
   experimental: {
     serverComponentsExternalPackages: ["unpdf"],
   },
