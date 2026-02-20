@@ -519,7 +519,7 @@ export default function ChatPage() {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto relative"
       >
-        <div className="px-6 py-8 space-y-8">
+        <div className="w-[70vw] mx-auto py-8 space-y-8">
           {displayMessages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
@@ -588,19 +588,29 @@ export default function ChatPage() {
                     )}
                   </div>
 
-                  {/* Copy button — always visible below AI card, left-aligned */}
+                  {/* Save + Copy buttons — always visible below AI card, left-aligned */}
                   {message.role === "assistant" && message.content && (
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(message.content);
-                        toast.success("Copied to clipboard");
-                      }}
-                      className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Copy response"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      Copy
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => saveOutput(message.id, message.content)}
+                        className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Save response"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(message.content);
+                          toast.success("Copied to clipboard");
+                        }}
+                        className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copy response"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -811,17 +821,19 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {!isAtBottom && (
-          <button
-            onClick={scrollToBottom}
-            className="absolute bottom-4 right-6 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-border shadow-elevation-2 text-xs text-muted-foreground hover:text-foreground hover:shadow-elevation-3 transition-all animate-fade-in"
-            aria-label="Jump to bottom"
-          >
-            <ChevronDown className="w-3.5 h-3.5" />
-            Jump to bottom
-          </button>
-        )}
       </div>
+
+      {/* Jump to bottom — fixed, centered, 10px above input box */}
+      {!isAtBottom && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-[148px] left-0 right-0 mx-auto w-fit z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-border shadow-elevation-2 text-xs text-muted-foreground hover:text-foreground hover:shadow-elevation-3 transition-all animate-fade-in"
+          aria-label="Jump to bottom"
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+          Jump to bottom
+        </button>
+      )}
 
       {/* Figma extraction preview */}
       {(figmaLoading || figmaExtraction || figmaError) && (
@@ -943,9 +955,9 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input — sticky at bottom */}
-      <div className="sticky bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur-sm">
-        <form onSubmit={handleSubmit} className="px-6 py-4">
+      {/* Input — sticky floating at bottom */}
+      <div className="sticky bottom-0 z-10 flex justify-center pointer-events-none pb-4">
+        <form onSubmit={handleSubmit} className="w-[50vw] pointer-events-auto bg-background rounded-2xl border border-border shadow-elevation-4 px-6 py-4">
           {/* Textarea container with send button inside */}
           <div className="relative rounded-xl border border-border bg-card focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background transition-shadow">
             <textarea

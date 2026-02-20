@@ -94,33 +94,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Mobile layout: top bar + drawer + main content
-  if (isMobile) {
-    return (
-      <div className="flex flex-col h-screen bg-background">
-        <MobileTopBar onMenuClick={() => setMobileNavOpen(true)} />
-        <MobileNav
-          open={mobileNavOpen}
-          onOpenChange={setMobileNavOpen}
+  // Unified layout — single JSX tree keeps {children} stable across breakpoint changes.
+  // Splitting into two separate returns would unmount/remount children on resize, resetting all page state.
+  return (
+    <div className={`h-screen bg-background overflow-hidden ${isMobile ? "flex flex-col" : "flex"}`}>
+      {isMobile ? (
+        <>
+          <MobileTopBar onMenuClick={() => setMobileNavOpen(true)} />
+          <MobileNav
+            open={mobileNavOpen}
+            onOpenChange={setMobileNavOpen}
+            workspace={workspace}
+            profiles={profiles}
+            activeProfileId={activeProfileId}
+            onProfileChange={handleProfileChange}
+          />
+        </>
+      ) : (
+        <AppSidebar
           workspace={workspace}
           profiles={profiles}
           activeProfileId={activeProfileId}
           onProfileChange={handleProfileChange}
         />
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    );
-  }
-
-  // Desktop layout: sidebar + main content
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <AppSidebar
-        workspace={workspace}
-        profiles={profiles}
-        activeProfileId={activeProfileId}
-        onProfileChange={handleProfileChange}
-      />
+      )}
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
