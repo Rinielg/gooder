@@ -514,12 +514,16 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto relative"
+      >
+        <div className="px-6 py-8 space-y-8">
           {displayMessages.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <Bot className="w-8 h-8 text-primary" />
+                <Sparkles className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-xl font-semibold mb-2">Brand Voice Assistant</h2>
               <p className="text-muted-foreground max-w-md mb-8">
@@ -553,131 +557,56 @@ export default function ChatPage() {
 
             return (
               <div key={message.id} className="space-y-2">
-                {/* Message bubble */}
+                {/* Message bubble — Phase 6 redesign */}
                 <div
                   className={cn(
-                    "flex gap-3 message-appear",
-                    message.role === "user" ? "justify-end" : "justify-start"
+                    "flex flex-col gap-1 message-appear",
+                    message.role === "user" ? "items-end" : "items-start"
                   )}
                 >
-                  {message.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                      <Bot className="w-4 h-4 text-primary" />
-                    </div>
-                  )}
-                  {message.role === "assistant" && message.content.includes("###") ? (
-                    <div className="w-full space-y-4">
-                      {splitIntoSections(message.content).map((section, idx) => (
-                        <div
-                          key={idx}
-                          className="group/section rounded-xl px-4 py-3 bg-card border border-border"
-                        >
-                          {section.title && (
-                            <h3 className="text-base font-semibold tracking-tight mb-2">
-                              {section.title}
-                            </h3>
-                          )}
-                          <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {renderFormattedText(section.body)}
-                          </div>
-                          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50 opacity-0 group-hover/section:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => saveOutput(message.id, section.raw)}
-                            >
-                              <Save className="w-3 h-3 mr-1" />
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                navigator.clipboard.writeText(section.raw);
-                                toast.success(`${section.title || "Section"} copied`);
-                              }}
-                            >
-                              <Copy className="w-3 h-3 mr-1" />
-                              Copy
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      {/* Full message save/copy */}
-                      <div className="flex items-center gap-2 px-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => saveOutput(message.id, message.content)}
-                        >
-                          <Save className="w-3 h-3 mr-1" />
-                          Save All
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            navigator.clipboard.writeText(message.content);
-                            toast.success("Full response copied");
-                          }}
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy All
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className={cn(
-                        "rounded-xl px-4 py-3 max-w-[85%]",
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border border-border"
-                      )}
+                  {/* Sender label */}
+                  <span className="text-xs font-medium text-muted-foreground px-1">
+                    {message.role === "user" ? "You" : "Gooder"}
+                  </span>
+
+                  {/* Message card */}
+                  <div
+                    className={cn(
+                      "rounded-xl px-4 py-3 max-w-[80%]",
+                      message.role === "user"
+                        ? "bg-zinc-100 text-foreground"
+                        : cn(
+                            "bg-white border border-border shadow-elevation-1",
+                            justCompletedId === message.id && "animate-message-flash"
+                          )
+                    )}
+                  >
+                    {message.role === "user" ? (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    ) : (
+                      <MemoizedMarkdown content={message.content} id={message.id} />
+                    )}
+                  </div>
+
+                  {/* Copy button — always visible below AI card, left-aligned */}
+                  {message.role === "assistant" && message.content && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(message.content);
+                        toast.success("Copied to clipboard");
+                      }}
+                      className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Copy response"
                     >
-                      <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {message.content}
-                      </div>
-                      {message.role === "assistant" && message.content && (
-                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => saveOutput(message.id, message.content)}
-                          >
-                            <Save className="w-3 h-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => {
-                              navigator.clipboard.writeText(message.content);
-                              toast.success("Copied to clipboard");
-                            }}
-                          >
-                            Copy
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {message.role === "user" && (
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </button>
                   )}
                 </div>
 
-                {/* Adherence score card (assistant messages only) */}
+                {/* PHASE 7: Adherence score card (assistant messages only) */}
                 {message.role === "assistant" && message.content && (
-                  <div className="ml-11">
+                  <div className="ml-0">
                     {isScoring && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -856,15 +785,24 @@ export default function ChatPage() {
             );
           })}
 
-          {isLoading && (displayMessages.length === 0 || displayMessages[displayMessages.length - 1]?.role === "user") && (
-            <div className="flex gap-3 message-appear">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-primary" />
-              </div>
-              <div className="bg-card border border-border rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating...
+          {status === "submitted" && (
+            displayMessages.length === 0 || displayMessages[displayMessages.length - 1]?.role !== "assistant"
+          ) && (
+            <div className="flex flex-col items-start gap-1 message-appear">
+              <span className="text-xs font-medium text-muted-foreground px-1">Gooder</span>
+              <div className="bg-white border border-border rounded-xl shadow-elevation-1 px-4 py-3">
+                <div
+                  className="flex items-center gap-1.5"
+                  aria-label="Gooder is typing"
+                  role="status"
+                >
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-muted-foreground/50 typing-dot"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -872,6 +810,17 @@ export default function ChatPage() {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {!isAtBottom && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-4 right-6 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-border shadow-elevation-2 text-xs text-muted-foreground hover:text-foreground hover:shadow-elevation-3 transition-all animate-fade-in"
+            aria-label="Jump to bottom"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+            Jump to bottom
+          </button>
+        )}
       </div>
 
       {/* Figma extraction preview */}
