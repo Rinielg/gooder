@@ -104,9 +104,9 @@
 }
 
 .streaming-cursor::after {
-  content: "▋";
-  animation: blink 1s step-end infinite;
-  color: hsl(var(--primary));
+  content: " ...";
+  animation: blink 0.8s step-end infinite;
+  color: hsl(var(--muted-foreground));
 }
 
 @keyframes blink {
@@ -116,4 +116,22 @@
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+.typing-dot {
+  animation: typing-dot 1s ease-in-out infinite;
+}
+
+@keyframes message-flash {
+  0%, 100% { background-color: transparent; }
+  40% { background-color: hsl(var(--primary) / 0.06); }
+}
+
+.animate-message-flash {
+  animation: message-flash 0.8s ease-out;
 }
