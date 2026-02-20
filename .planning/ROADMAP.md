@@ -119,12 +119,13 @@ Plans:
   4. AI responses render markdown correctly: headings, lists, code blocks, and inline code all display with proper formatting
   5. Each AI-generated message has a visible copy-to-clipboard button that copies the full response text
   6. Chat input area uses restyled textarea and send button from the new component system
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — Dependencies + CSS keyframes (react-markdown, remark-gfm, react-shiki, next.config.js, globals.css)
+- [ ] 06-02-PLAN.md — MemoizedMarkdown + CodeBlock component (markdown-message.tsx, react-shiki github-light)
+- [ ] 06-03-PLAN.md — Message rendering redesign (sender labels, card surfaces, typing indicator, scroll lock, copy button)
+- [ ] 06-04-PLAN.md — Input area + stop button + completion flash (sticky textarea, send-to-stop transform)
 
 ### Phase 7: Chat Scoring & Figma Preview
 **Goal**: Adherence scoring and Figma extraction features within chat render with premium data visualization while preserving all information density
@@ -171,10 +172,10 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 3. App Shell & Navigation | 0/3 | Not started | - |
 | 4. Auth Pages | 0/1 | Not started | - |
 | 5. Feature Pages & Settings | 0/5 | Not started | - |
-| 6. Chat Interface Core | 0/3 | Not started | - |
+| 6. Chat Interface Core | 0/4 | Not started | - |
 | 7. Chat Scoring & Figma Preview | 0/2 | Not started | - |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-17*
-*Last updated: 2026-02-17*
+*Last updated: 2026-02-20*
