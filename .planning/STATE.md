@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 5 of 8 (Feature Pages & Settings)
-Plan: 5 of 5 in current phase
-Status: Phase Complete
-Last activity: 2026-02-19 -- Completed 05-05-PLAN.md (Profile Detail & Training Page)
+Phase: 6 of 8 (Chat Interface Core)
+Plan: 1 of 4 in current phase
+Status: In Progress
+Last activity: 2026-02-20 -- Completed 06-01-PLAN.md (Dependencies & CSS Primitives)
 
-Progress: [█████████░] 81%
+Progress: [█████████░] 83%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████████░] 81%
 | Phase 05 P02 | 1 | 1 tasks | 1 files |
 | Phase 05 P03 | 3 min | 2 tasks | 3 files |
 | Phase 05 P05 | 7 | 2 tasks | 2 files |
+| Phase 06 P01 | 2 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Training page uses inline pulse skeleton not FormSkeleton+PageContainer — preserves flex flex-col h-full layout for chat interface
 - [Phase 05]: AlertDialog replaces window.confirm() in profile detail: deleteProfileOpen (boolean) for profile delete, deleteDocTarget (string|null) for training doc delete
 - [Phase 05]: Breadcrumbs overrides={{ [id]: entity.name }} pattern validated on profile detail and training pages
+- [Phase 06-01]: react-markdown@10 is ESM-only; transpilePackages in next.config.js prevents require() of ES Module errors in Next.js 14
+- [Phase 06-01]: streaming-cursor changed from block cursor to pulsing ellipsis with muted-foreground color
+- [Phase 06-01]: CSS animation primitives for chat UI (typing-dot, message-flash) defined globally in globals.css
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-19
-Stopped at: Completed 05-05-PLAN.md (Profile Detail & Training Page) — Phase 05 complete
+Last session: 2026-02-20
+Stopped at: Completed 06-01-PLAN.md (Dependencies & CSS Primitives)
 Resume file: None
