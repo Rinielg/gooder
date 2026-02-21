@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MemoizedMarkdown } from "./markdown-message";
+import { ScoreCard } from "./score-card";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { OutputType, AdherenceScore } from "@/types";
 
@@ -66,21 +68,22 @@ const DIMENSION_LABELS: Record<string, string> = {
   overall_quality: "Overall Quality",
 };
 
+// Thresholds: ≥7 green, ≥5 yellow, <5 red (standardised in Phase 7 per CONTEXT.md)
 function scoreColor(score: number): string {
-  if (score >= 8) return "text-green-600 dark:text-green-400";
-  if (score >= 6) return "text-yellow-600 dark:text-yellow-400";
+  if (score >= 7) return "text-green-600 dark:text-green-400";
+  if (score >= 5) return "text-yellow-600 dark:text-yellow-400";
   return "text-red-600 dark:text-red-400";
 }
 
 function scoreBadgeVariant(score: number): "success" | "warning" | "destructive" {
-  if (score >= 8) return "success";
-  if (score >= 6) return "warning";
+  if (score >= 7) return "success";
+  if (score >= 5) return "warning";
   return "destructive";
 }
 
 function scoreBarColor(score: number): string {
-  if (score >= 8) return "bg-green-500";
-  if (score >= 6) return "bg-yellow-500";
+  if (score >= 7) return "bg-green-500";
+  if (score >= 5) return "bg-yellow-500";
   return "bg-red-500";
 }
 
@@ -160,6 +163,8 @@ export default function ChatPage() {
   const [adherenceScores, setAdherenceScores] = useState<Record<string, AdherenceScore>>({});
   const [scoringIds, setScoringIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // Track which message IDs have had their score card superseded after Improve
+  const [regeneratedFromIds, setRegeneratedFromIds] = useState<Set<string>>(new Set());
   // Track which message IDs we've already started scoring
   const scoredRef = useRef<Set<string>>(new Set());
 
@@ -320,6 +325,27 @@ export default function ChatPage() {
 
     const prompt = `The previous output scored ${score.overall_score}/10. Issues: ${allIssues}. Please regenerate addressing these specific issues.`;
     sendMessage({ text: prompt });
+  }
+
+  // ── Improve with adherence feedback (Phase 7) ────────────────────────────
+  function handleImprove(messageId: string, score: AdherenceScore, dimensionKey?: string) {
+    // Mark the original score card as superseded
+    setRegeneratedFromIds(prev => new Set(prev).add(messageId))
+
+    let prompt: string
+    if (dimensionKey) {
+      // Per-dimension improve — targeted prompt for one dimension
+      const label = DIMENSION_LABELS[dimensionKey] ?? dimensionKey
+      const dim = score.scores[dimensionKey as keyof typeof score.scores] as { score: number; notes: string }
+      const notes = dim?.notes ? ` ${dim.notes}` : ""
+      prompt = `The ${label} dimension scored ${dim?.score?.toFixed(1) ?? "low"}/10.${notes} Please regenerate improving specifically this aspect.`
+    } else {
+      // Overall improve — reuse existing handleRegenerate logic
+      handleRegenerate(score)
+      return
+    }
+
+    sendMessage({ text: prompt })
   }
 
   // ── Figma extraction ───────────────────────────────────────────────
