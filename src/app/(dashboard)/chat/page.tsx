@@ -642,179 +642,36 @@ export default function ChatPage() {
 
                 {/* PHASE 7: Adherence score card (assistant messages only) */}
                 {message.role === "assistant" && message.content && (
-                  <div className="ml-0">
+                  <div className="mt-2">
+                    {/* Scoring in progress */}
                     {isScoring && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Scoring adherence...
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground py-1 ml-1">
+                        <span className="w-3 h-3 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin inline-block" />
+                        Scoring...
                       </div>
                     )}
 
-                    {score && (
-                      <div className="rounded-lg border border-border bg-card/50 overflow-hidden">
-                        {/* Compact header row */}
-                        <button
-                          onClick={() => toggleExpand(message.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent/50 transition-colors"
+                    {/* Score card — AnimatePresence for entrance animation */}
+                    <AnimatePresence>
+                      {score && !isScoring && (
+                        <motion.div
+                          key={`scorecard-${message.id}`}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
                         >
-                          {score.pass ? (
-                            <ShieldCheck className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <ShieldX className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                          )}
-                          <Badge
-                            variant={scoreBadgeVariant(score.overall_score)}
-                            className="text-[10px] px-1.5 py-0"
-                          >
-                            {score.overall_score.toFixed(1)}
-                          </Badge>
-                          <span className={cn("font-medium", score.pass ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-                            {score.pass ? "Pass" : "Fail"}
-                          </span>
-                          {score.flags.filter((f) => f.severity === "automatic_fail" || f.severity === "fail").length > 0 && (
-                            <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                              <AlertTriangle className="w-3 h-3" />
-                              {score.flags.filter((f) => f.severity === "automatic_fail" || f.severity === "fail").length} issue(s)
-                            </span>
-                          )}
-                          <span className="ml-auto text-muted-foreground">
-                            {isExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            )}
-                          </span>
-                        </button>
-
-                        {/* Expanded details */}
-                        {isExpanded && (
-                          <div className="px-3 pb-3 space-y-3 border-t border-border">
-                            {/* Dimension scores */}
-                            <div className="grid grid-cols-2 gap-3 pt-3">
-                              {(Object.entries(score.scores) as [string, { score: number; weight: number; notes: string; flags: any[] }][]).map(
-                                ([key, dim]) => (
-                                  <div key={key} className="group/dim rounded-lg border border-border bg-card p-3">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <span className="text-[11px] font-medium text-foreground">
-                                        {DIMENSION_LABELS[key] || key}
-                                      </span>
-                                      <span className={cn("text-[11px] font-semibold tabular-nums", scoreColor(dim.score))}>
-                                        {dim.score.toFixed(1)}
-                                      </span>
-                                    </div>
-                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-2">
-                                      <div
-                                        className={cn("h-full rounded-full transition-all", scoreBarColor(dim.score))}
-                                        style={{ width: `${dim.score * 10}%` }}
-                                      />
-                                    </div>
-                                    {dim.notes && (
-                                      <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">{dim.notes}</p>
-                                    )}
-                                    <div className="flex items-center gap-1 opacity-0 group-hover/dim:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-[10px] px-2"
-                                        onClick={() => saveOutput(message.id, `${DIMENSION_LABELS[key] || key}: ${dim.score.toFixed(1)}/10\n${dim.notes || ""}`)}
-                                      >
-                                        <Save className="w-2.5 h-2.5 mr-1" />
-                                        Save
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-[10px] px-2"
-                                        onClick={() => {
-                                          const text = `${DIMENSION_LABELS[key] || key}: ${dim.score.toFixed(1)}/10${dim.notes ? `\n${dim.notes}` : ""}${dim.flags?.length ? `\nFlags: ${dim.flags.map((f: any) => f.issue).join("; ")}` : ""}`;
-                                          navigator.clipboard.writeText(text);
-                                          toast.success(`${DIMENSION_LABELS[key] || key} copied`);
-                                        }}
-                                      >
-                                        <Copy className="w-2.5 h-2.5 mr-1" />
-                                        Copy
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )
-                              )}
-                            </div>
-
-                            {/* Compliance flags */}
-                            {score.flags.filter((f) => f.severity === "automatic_fail" || f.severity === "fail").length > 0 && (
-                              <div className="space-y-1.5">
-                                <p className="text-[11px] font-medium text-red-600 dark:text-red-400">Compliance Issues</p>
-                                {score.flags
-                                  .filter((f) => f.severity === "automatic_fail" || f.severity === "fail")
-                                  .map((flag, i) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-2 p-2 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900"
-                                    >
-                                      <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
-                                      <div className="min-w-0">
-                                        <p className="text-[11px] font-medium text-red-700 dark:text-red-300">
-                                          {flag.issue}
-                                        </p>
-                                        {flag.suggestion && (
-                                          <p className="text-[10px] text-red-600/70 dark:text-red-400/70 mt-0.5">
-                                            {flag.suggestion}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-
-                            {/* Warnings */}
-                            {score.flags.filter((f) => f.severity === "warning").length > 0 && (
-                              <div className="space-y-1">
-                                {score.flags
-                                  .filter((f) => f.severity === "warning")
-                                  .map((flag, i) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-2 p-2 rounded bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900"
-                                    >
-                                      <AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0 mt-0.5" />
-                                      <p className="text-[11px] text-yellow-700 dark:text-yellow-300">{flag.issue}</p>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-
-                            {/* Suggestions */}
-                            {score.suggestions.length > 0 && (
-                              <div className="space-y-1">
-                                <p className="text-[11px] font-medium text-muted-foreground">Suggestions</p>
-                                <ul className="space-y-0.5">
-                                  {score.suggestions.map((s, i) => (
-                                    <li key={i} className="text-[11px] text-muted-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
-                                      {s}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {/* Regenerate button on fail */}
-                            {!score.pass && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full h-7 text-xs border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                onClick={() => handleRegenerate(score)}
-                                disabled={isLoading}
-                              >
-                                <RefreshCw className="w-3 h-3 mr-1.5" />
-                                Regenerate with feedback
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          <ScoreCard
+                            messageId={message.id}
+                            score={score}
+                            isExpanded={isExpanded}
+                            onToggleExpand={() => toggleExpand(message.id)}
+                            onImprove={handleImprove}
+                            isSuperseded={regeneratedFromIds.has(message.id)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
               </div>
@@ -844,6 +701,111 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* PHASE 7: Figma extraction panel — inline in message list (moved from below scroll container) */}
+          {(figmaLoading || figmaExtraction || figmaError) && (
+            <div
+              id="figma-panel-inline"
+              className="rounded-xl border border-border bg-white shadow-elevation-1 overflow-hidden"
+            >
+              {/* Loading state */}
+              {figmaLoading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-3">
+                  <span className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin inline-block" />
+                  Extracting Figma frame data...
+                </div>
+              )}
+
+              {/* Error state */}
+              {figmaError && (
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    {figmaError}
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={dismissFigma}>
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+
+              {/* Extraction result */}
+              {figmaExtraction && (
+                <>
+                  {/* Panel header with frame name and action buttons */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <Layout className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{figmaExtraction.frameName}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {figmaExtraction.layout.width}×{figmaExtraction.layout.height}
+                      </Badge>
+                      {figmaExtraction.layout.layoutMode && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {figmaExtraction.layout.layoutMode}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="default" size="sm" className="h-7 text-xs" onClick={confirmFigma}>
+                        <Check className="w-3 h-3 mr-1" />
+                        Use this data
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={dismissFigma}>
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Components first, then Text nodes */}
+                  <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {figmaExtraction.components.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
+                          <Component className="w-3 h-3" />
+                          Components ({figmaExtraction.components.length})
+                        </div>
+                        <ul className="space-y-0.5">
+                          {figmaExtraction.components.slice(0, 8).map((c) => (
+                            <li key={c.id} className="text-muted-foreground truncate">
+                              {c.name} <span className="opacity-60">({c.type})</span>
+                            </li>
+                          ))}
+                          {figmaExtraction.components.length > 8 && (
+                            <li className="text-muted-foreground/60">+{figmaExtraction.components.length - 8} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {figmaExtraction.texts.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
+                          <Type className="w-3 h-3" />
+                          Text nodes ({figmaExtraction.texts.length})
+                        </div>
+                        <ul className="space-y-0.5">
+                          {figmaExtraction.texts.slice(0, 8).map((t) => (
+                            <li key={t.id} className="text-muted-foreground truncate">
+                              &quot;{t.characters}&quot;
+                              {t.fontSize && <span className="opacity-60"> ({t.fontSize}px)</span>}
+                            </li>
+                          ))}
+                          {figmaExtraction.texts.length > 8 && (
+                            <li className="text-muted-foreground/60">+{figmaExtraction.texts.length - 8} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {figmaExtraction.components.length === 0 && figmaExtraction.texts.length === 0 && (
+                      <p className="text-muted-foreground col-span-2">No components or text nodes found in this frame.</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -859,126 +821,6 @@ export default function ChatPage() {
           <ChevronDown className="w-3.5 h-3.5" />
           Jump to bottom
         </button>
-      )}
-
-      {/* Figma extraction preview */}
-      {(figmaLoading || figmaExtraction || figmaError) && (
-        <div className="border-t border-border bg-background">
-          <div className="max-w-3xl mx-auto px-4 py-3">
-            {figmaLoading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Extracting Figma frame data...
-              </div>
-            )}
-
-            {figmaError && (
-              <div className="flex items-center justify-between rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-3">
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                  {figmaError}
-                </div>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={dismissFigma}>
-                  Dismiss
-                </Button>
-              </div>
-            )}
-
-            {figmaExtraction && (
-              <div className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Layout className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">{figmaExtraction.frameName}</span>
-                      <Badge variant="outline" className="text-[10px]">
-                        {figmaExtraction.layout.width}×{figmaExtraction.layout.height}
-                      </Badge>
-                      {figmaExtraction.layout.layoutMode && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {figmaExtraction.layout.layoutMode}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={confirmFigma}
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        Use this data
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={dismissFigma}
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Dismiss
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  {/* Components */}
-                  {figmaExtraction.components.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
-                        <Component className="w-3 h-3" />
-                        Components ({figmaExtraction.components.length})
-                      </div>
-                      <ul className="space-y-0.5">
-                        {figmaExtraction.components.slice(0, 8).map((c) => (
-                          <li key={c.id} className="text-muted-foreground truncate">
-                            {c.name} <span className="opacity-60">({c.type})</span>
-                          </li>
-                        ))}
-                        {figmaExtraction.components.length > 8 && (
-                          <li className="text-muted-foreground/60">
-                            +{figmaExtraction.components.length - 8} more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Text nodes */}
-                  {figmaExtraction.texts.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1.5 text-muted-foreground font-medium">
-                        <Type className="w-3 h-3" />
-                        Text nodes ({figmaExtraction.texts.length})
-                      </div>
-                      <ul className="space-y-0.5">
-                        {figmaExtraction.texts.slice(0, 8).map((t) => (
-                          <li key={t.id} className="text-muted-foreground truncate">
-                            &quot;{t.characters}&quot;
-                            {t.fontSize && <span className="opacity-60"> ({t.fontSize}px)</span>}
-                          </li>
-                        ))}
-                        {figmaExtraction.texts.length > 8 && (
-                          <li className="text-muted-foreground/60">
-                            +{figmaExtraction.texts.length - 8} more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-
-                  {figmaExtraction.components.length === 0 && figmaExtraction.texts.length === 0 && (
-                    <p className="text-muted-foreground col-span-2">
-                      No components or text nodes found in this frame.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
       {/* Input — sticky floating at bottom */}
