@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/utils";
 import { MemoizedMarkdown } from "./markdown-message";
 import { ScoreCard } from "./score-card";
+import { OutputCardGroup, AdjustTarget, DetectedOutputType } from "./output-card";
+import { AdjustDialog } from "./adjust-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { OutputType, AdherenceScore } from "@/types";
@@ -176,6 +178,9 @@ export default function ChatPage() {
   const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
   const prevStatusRef = useRef<string>("idle");
 
+  // Phase 7.1: Adjust dialog state
+  const [adjustTarget, setAdjustTarget] = useState<AdjustTarget | null>(null);
+
   // Figma extraction state
   const [figmaExtraction, setFigmaExtraction] = useState<FigmaExtraction | null>(null);
   const [figmaLoading, setFigmaLoading] = useState(false);
@@ -241,6 +246,12 @@ export default function ChatPage() {
       : "",
   }));
 
+  // Phase 7.1: Track the ID of the last assistant message for streaming gate
+  const lastAssistantId = useMemo(() => {
+    const assistants = displayMessages.filter(m => m.role === "assistant");
+    return assistants[assistants.length - 1]?.id ?? null;
+  }, [displayMessages]);
+
   // ── Auto-score assistant messages once streaming finishes ────────────
   const scoreMessage = useCallback(
     async (messageId: string, content: string) => {
@@ -267,6 +278,8 @@ export default function ChatPage() {
 
         const score: AdherenceScore = await res.json();
         setAdherenceScores((prev) => ({ ...prev, [messageId]: score }));
+        // Auto-expand the score card when a score arrives
+        setExpandedIds((prev) => new Set(prev).add(messageId));
       } catch (err) {
         console.error("Adherence scoring error:", err);
       } finally {
@@ -346,6 +359,20 @@ export default function ChatPage() {
     }
 
     sendMessage({ text: prompt })
+  }
+
+  // Phase 7.1: Open the Adjust dialog for a specific output section
+  function openAdjust(target: AdjustTarget) {
+    setAdjustTarget(target);
+  }
+
+  // Phase 7.1: Submit adjustment — constructs targeted prompt and sends via useChat
+  function submitAdjust(text: string) {
+    if (!adjustTarget || !text.trim()) return;
+    // Keep prompt concise — don't echo the full sectionBody to avoid cluttering chat history (research pitfall 7)
+    const prompt = `Please adjust the ${adjustTarget.sectionTitle}: ${text.trim()}\n\nOriginal content (first 200 chars):\n${adjustTarget.sectionBody.slice(0, 200)}${adjustTarget.sectionBody.length > 200 ? "..." : ""}`;
+    sendMessage({ text: prompt });
+    setAdjustTarget(null);
   }
 
   // ── Figma extraction ───────────────────────────────────────────────
@@ -507,6 +534,58 @@ export default function ChatPage() {
         type: outputType,
         title: `Generated ${outputType.replace("_", " ")} — ${new Date().toLocaleDateString()}`,
         content: { raw: messageContent },
+        adherence_score: score,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+      toast.success("Output saved to library");
+    } catch {
+      toast.error("Failed to save output");
+    }
+  }
+
+  // Phase 7.1: Per-section save — called from OutputCard Save button
+  async function saveSection(
+    messageId: string,
+    sectionTitle: string,
+    sectionBody: string,
+    outputType: DetectedOutputType
+  ) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("workspace_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
+      if (!membership) return;
+
+      // Map DetectedOutputType to DB OutputType (DB has CHECK constraint on these 4 values only)
+      // WhatsApp -> "sms" (closest semantic match; no DB migration needed for this phase)
+      // generic -> "email" as fallback
+      const dbTypeMap: Record<DetectedOutputType, OutputType> = {
+        email:      "email",
+        sms:        "sms",
+        push:       "push",
+        ux_journey: "ux_journey",
+        whatsapp:   "sms",   // DB CHECK constraint: type IN ('ux_journey','email','sms','push')
+        generic:    "email", // fallback — generic content saved as email type
+      };
+      const dbType = dbTypeMap[outputType];
+
+      const score = adherenceScores[messageId] ?? null;
+
+      const { error } = await supabase.from("saved_outputs").insert({
+        workspace_id: membership.workspace_id,
+        brand_profile_id: activeProfileId,
+        type: dbType,
+        title: `${sectionTitle} — ${new Date().toLocaleDateString()}`,
+        content: { raw: sectionBody },
         adherence_score: score,
         created_by: user.id,
       });
