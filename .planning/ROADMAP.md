@@ -144,12 +144,15 @@ Plans:
 
 ### Phase 07.1: Structured Output Cards (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Multi-section AI responses render as separate per-type visual cards (email, SMS, push, WhatsApp, UX Journey) with Save, Copy, and Adjust actions, and a targeted Adjust dialog above the input for focused revisions
 **Depends on:** Phase 7
-**Plans:** 0 plans
+**Requirements:** OUTCARD-01, OUTCARD-02, OUTCARD-03, OUTCARD-04, OUTCARD-05
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 07.1 to break down)
+- [ ] 07.1-01-PLAN.md — OutputCardGroup + all card variants + type detection + field parsing (output-card.tsx)
+- [ ] 07.1-02-PLAN.md — AdjustDialog floating panel component (adjust-dialog.tsx)
+- [ ] 07.1-03-PLAN.md — Wire OutputCardGroup + AdjustDialog into page.tsx + streaming gate + human verify
 
 ### Phase 8: Polish & Responsive QA
 **Goal**: The entire app feels premium through consistent microinteractions, helpful tooltips, and verified responsive behavior
@@ -183,6 +186,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 5. Feature Pages & Settings | 0/5 | Not started | - |
 | 6. Chat Interface Core | 0/4 | Complete    | 2026-02-20 |
 | 7. Chat Scoring & Figma Preview | 0/2 | Not started | - |
+| 7.1. Structured Output Cards | 0/3 | Planned | - |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
 ---
