@@ -136,11 +136,11 @@ Plans:
   2. All 8 scoring dimensions are visible with expand/collapse interaction -- no dimension data is lost or hidden by default
   3. The regenerate-with-feedback button works, passing specific dimension issues back into the prompt for targeted improvement
   4. Figma extraction preview UI renders component and text node lists correctly, preserving the existing extraction workflow
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md — ScoreRing SVG component + ScoreCard with dimensions, expand/collapse, Improve buttons (score-card.tsx)
+- [ ] 07-02-PLAN.md — Wire ScoreCard into page.tsx + handleImprove + regeneratedFromIds + Figma panel repositioned inline
 
 ### Phase 8: Polish & Responsive QA
 **Goal**: The entire app feels premium through consistent microinteractions, helpful tooltips, and verified responsive behavior
@@ -178,4 +178,4 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 
 ---
 *Roadmap created: 2026-02-17*
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-21*
