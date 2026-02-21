@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 7 of 8 (Chat Scoring & Output)
-Plan: 2 of ? in current phase
+Phase: 7.1 of 8 (Structured Output Cards)
+Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-02-21 -- Completed 07-01-PLAN.md (ScoreCard + ScoreRing components)
+Last activity: 2026-02-21 -- Completed 07.1-01-PLAN.md (output-card.tsx — all output card components)
 
 Progress: [█████████░] 90%
 
@@ -63,6 +63,7 @@ Progress: [█████████░] 90%
 | Phase 06 P03 | 219 | 2 tasks | 1 files |
 | Phase 06 P04 | 35 min | 2 tasks | 2 files |
 | Phase 07 P01 | 2 | 2 tasks | 1 files |
+| Phase 07.1 P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,9 @@ Recent decisions affecting current work:
 - [Phase 07-01]: motion.circle transform is static SVG attribute (not framer animate target) to preserve 12-o'clock ring start position
 - [Phase 07-01]: AlertDialogDescription asChild renders as div for block-level failing dimension children (avoids div-in-p hydration error)
 - [Phase 07-01]: expandedDims (per-dimension) is separate local state from expandedIds in page.tsx — two independent expand levels
+- [Phase 07.1]: overflow-x-auto with native div used for UX Journey horizontal scroll — ScrollArea component is vertical-only
+- [Phase 07.1]: Array.from(matchAll()) used instead of spread operator — TS error on RegExpStringIterator without explicit target
+- [Phase 07.1]: OUTPUT_TYPE_CONFIG exported from output-card.tsx for reuse in adjust-dialog.tsx without duplication
 
 ### Roadmap Evolution
 
@@ -147,5 +151,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 07-01-PLAN.md (ScoreCard + ScoreRing components)
+Stopped at: Completed 07.1-01-PLAN.md (output-card.tsx — all output card components)
 Resume file: None
