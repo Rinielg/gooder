@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 7 of 8 (Chat Scoring & Output)
-Plan: 1 of ? in current phase
-Status: Ready to Start
-Last activity: 2026-02-20 -- Completed 06-04-PLAN.md (Input area redesign + full Phase 6 verification)
+Plan: 2 of ? in current phase
+Status: In Progress
+Last activity: 2026-02-21 -- Completed 07-01-PLAN.md (ScoreCard + ScoreRing components)
 
 Progress: [█████████░] 90%
 
@@ -62,6 +62,7 @@ Progress: [█████████░] 90%
 | Phase 06 P02 | 135 | 2 tasks | 1 files |
 | Phase 06 P03 | 219 | 2 tasks | 1 files |
 | Phase 06 P04 | 35 min | 2 tasks | 2 files |
+| Phase 07 P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,10 @@ Recent decisions affecting current work:
 - [Phase 06-04]: Textarea not disabled during streaming — stop button is cancel mechanism; isLoading (not isStreaming) used for send/stop toggle
 - [Phase 06-04]: Input floated as rounded card (w-[50vw] with shadow) rather than full-width border-t strip for premium feel
 - [Phase 06-04]: layout.tsx merged into single JSX tree — split mobile/desktop returns unmounted children on resize, resetting chat page state
+- [Phase 07-01]: Score threshold 7 used in score-card.tsx per CONTEXT.md; Phase 6 page.tsx functions remain at 8 — intentional documented discrepancy
+- [Phase 07-01]: motion.circle transform is static SVG attribute (not framer animate target) to preserve 12-o'clock ring start position
+- [Phase 07-01]: AlertDialogDescription asChild renders as div for block-level failing dimension children (avoids div-in-p hydration error)
+- [Phase 07-01]: expandedDims (per-dimension) is separate local state from expandedIds in page.tsx — two independent expand levels
 
 ### Pending Todos
 
@@ -137,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Completed 06-04-PLAN.md (Input area redesign + full Phase 6 verification)
+Last session: 2026-02-21
+Stopped at: Completed 07-01-PLAN.md (ScoreCard + ScoreRing components)
 Resume file: None
