@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 Phase: 7.1 of 8 (Structured Output Cards)
 Plan: 3 of 3 in current phase
 Status: In Progress
-Last activity: 2026-02-21 -- Completed 07.1-02-PLAN.md (adjust-dialog.tsx — AdjustDialog floating panel)
+Last activity: 2026-02-21 -- Completed 07.1-03-PLAN.md (page.tsx wiring — OutputCardGroup + AdjustDialog) — checkpoint reached, awaiting human verification
 
 Progress: [█████████░] 90%
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 90%
 | Phase 07 P01 | 2 | 2 tasks | 1 files |
 | Phase 07.1 P01 | 2 | 2 tasks | 1 files |
 | Phase 07.1 P02 | 1 | 1 tasks | 1 files |
+| Phase 07.1 P03 | 5 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,9 @@ Recent decisions affecting current work:
 - [Phase 07.1]: Array.from(matchAll()) used instead of spread operator — TS error on RegExpStringIterator without explicit target
 - [Phase 07.1]: OUTPUT_TYPE_CONFIG exported from output-card.tsx for reuse in adjust-dialog.tsx without duplication
 - [Phase 07.1-02]: Internal text state in AdjustDialog — adjustText never reaches page.tsx, preventing message list re-renders on every keystroke (research pitfall 5)
+- [Phase 07.1-03]: isCurrentlyStreaming gates on both 'streaming' and 'submitted' status — both mean partial content pre-full-response
+- [Phase 07.1-03]: submitAdjust() truncates sectionBody to 200 chars — avoids echoing full content in every adjust prompt
+- [Phase 07.1-03]: AdjustDialog at z-20 above input form z-10 — prevents z-index overlap
 
 ### Roadmap Evolution
 
@@ -153,5 +157,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 07.1-02-PLAN.md (adjust-dialog.tsx — AdjustDialog floating panel)
+Stopped at: Completed 07.1-03-PLAN.md — checkpoint task 3 awaiting human verification
 Resume file: None
