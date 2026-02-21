@@ -660,9 +660,21 @@ export default function ChatPage() {
             const isScoring = scoringIds.has(message.id);
             const isExpanded = expandedIds.has(message.id);
 
+            // Phase 7.1: Streaming gate — only split into output cards AFTER streaming completes.
+            // splitIntoSections() on partial streamed content produces garbage; gate on status + message ID.
+            const isCurrentlyStreaming =
+              (status === "streaming" || status === "submitted") &&
+              message.id === lastAssistantId;
+
+            const sections = message.role === "assistant" && !isCurrentlyStreaming
+              ? splitIntoSections(message.content)
+              : [];
+            const titledSections = sections.filter(s => s.title);
+            const isMultiSectionRendered =
+              message.role === "assistant" && !isCurrentlyStreaming && titledSections.length >= 2;
+
             return (
               <div key={message.id} className="space-y-2">
-                {/* Message bubble — Phase 6 redesign */}
                 <div
                   className={cn(
                     "flex flex-col gap-1 message-appear",
@@ -674,27 +686,37 @@ export default function ChatPage() {
                     {message.role === "user" ? "You" : "Gooder"}
                   </span>
 
-                  {/* Message card */}
+                  {/* Message card — max-w-[80%] only for user messages and single-block AI responses;
+                      OutputCardGroup gets full column width */}
                   <div
                     className={cn(
-                      "rounded-xl px-4 py-3 max-w-[80%]",
+                      "rounded-xl",
                       message.role === "user"
-                        ? "bg-zinc-100 text-foreground"
+                        ? "bg-zinc-100 text-foreground px-4 py-3 max-w-[80%]"
+                        : isMultiSectionRendered
+                        ? "w-full"
                         : cn(
-                            "bg-white border border-border shadow-elevation-1",
+                            "bg-white border border-border shadow-elevation-1 px-4 py-3 max-w-[80%]",
                             justCompletedId === message.id && "animate-message-flash"
                           )
                     )}
                   >
                     {message.role === "user" ? (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    ) : (
+                    ) : isCurrentlyStreaming || !isMultiSectionRendered ? (
                       <MemoizedMarkdown content={message.content} id={message.id} />
+                    ) : (
+                      <OutputCardGroup
+                        sections={sections}
+                        messageId={message.id}
+                        onSave={saveSection}
+                        onAdjust={openAdjust}
+                      />
                     )}
                   </div>
 
-                  {/* Save + Copy buttons — always visible below AI card, left-aligned */}
-                  {message.role === "assistant" && message.content && (
+                  {/* Whole-message Save + Copy — HIDDEN when OutputCardGroup renders (per-card buttons replace them) */}
+                  {message.role === "assistant" && message.content && !isMultiSectionRendered && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => saveOutput(message.id, message.content)}
@@ -901,6 +923,28 @@ export default function ChatPage() {
           Jump to bottom
         </button>
       )}
+
+      {/* Phase 7.1: AdjustDialog — slides up above input when Adjust is clicked on a card */}
+      <AnimatePresence>
+        {adjustTarget && (
+          <motion.div
+            key="adjust-dialog"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="sticky bottom-0 z-20 flex justify-center px-4 pb-2 pointer-events-none"
+          >
+            <div className="pointer-events-auto">
+              <AdjustDialog
+                target={adjustTarget}
+                onSubmit={submitAdjust}
+                onClose={() => setAdjustTarget(null)}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Input — sticky floating at bottom */}
       <div className="sticky bottom-0 z-10 flex justify-center pointer-events-none pb-4">
