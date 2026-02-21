@@ -142,6 +142,15 @@ Plans:
 - [ ] 07-01-PLAN.md — ScoreRing SVG component + ScoreCard with dimensions, expand/collapse, Improve buttons (score-card.tsx)
 - [ ] 07-02-PLAN.md — Wire ScoreCard into page.tsx + handleImprove + regeneratedFromIds + Figma panel repositioned inline
 
+### Phase 07.1: Structured Output Cards (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 07.1 to break down)
+
 ### Phase 8: Polish & Responsive QA
 **Goal**: The entire app feels premium through consistent microinteractions, helpful tooltips, and verified responsive behavior
 **Depends on**: Phase 5, Phase 7

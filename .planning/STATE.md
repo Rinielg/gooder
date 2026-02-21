@@ -130,6 +130,10 @@ Recent decisions affecting current work:
 - [Phase 07-01]: AlertDialogDescription asChild renders as div for block-level failing dimension children (avoids div-in-p hydration error)
 - [Phase 07-01]: expandedDims (per-dimension) is separate local state from expandedIds in page.tsx — two independent expand levels
 
+### Roadmap Evolution
+
+- Phase 07.1 inserted after Phase 7: Structured Output Cards (URGENT) — per-output-type chat cards with Save/Copy/Adjust, UX journey horizontal scroll, email/push/SMS field rendering
+
 ### Pending Todos
 
 None yet.
