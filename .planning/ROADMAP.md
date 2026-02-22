@@ -154,6 +154,15 @@ Plans:
 - [ ] 07.1-02-PLAN.md — AdjustDialog floating panel component (adjust-dialog.tsx)
 - [ ] 07.1-03-PLAN.md — Wire OutputCardGroup + AdjustDialog into page.tsx + streaming gate + human verify
 
+### Phase 07.1.1: Structured Output Renderers (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 7.1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 07.1.1 to break down)
+
 ### Phase 8: Polish & Responsive QA
 **Goal**: The entire app feels premium through consistent microinteractions, helpful tooltips, and verified responsive behavior
 **Depends on**: Phase 5, Phase 7
