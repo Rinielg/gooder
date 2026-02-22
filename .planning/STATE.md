@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 Phase: 7.1 of 8 (Structured Output Cards)
 Plan: 3 of 3 in current phase
-Status: In Progress
-Last activity: 2026-02-21 -- Completed 07.1-03-PLAN.md (page.tsx wiring — OutputCardGroup + AdjustDialog) — checkpoint reached, awaiting human verification
+Status: Complete
+Last activity: 2026-02-22 -- Completed 07.1-03-PLAN.md — human verification approved; post-verify fixes committed (WhatsApp fallback, UX Journey parsing, accordion default collapsed)
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,7 +65,7 @@ Progress: [█████████░] 90%
 | Phase 07 P01 | 2 | 2 tasks | 1 files |
 | Phase 07.1 P01 | 2 | 2 tasks | 1 files |
 | Phase 07.1 P02 | 1 | 1 tasks | 1 files |
-| Phase 07.1 P03 | 5 | 2 tasks | 1 files |
+| Phase 07.1 P03 | ~20min | 3 tasks + post-verify fixes | 4 files |
 
 ## Accumulated Context
 
@@ -139,6 +139,10 @@ Recent decisions affecting current work:
 - [Phase 07.1-03]: isCurrentlyStreaming gates on both 'streaming' and 'submitted' status — both mean partial content pre-full-response
 - [Phase 07.1-03]: submitAdjust() truncates sectionBody to 200 chars — avoids echoing full content in every adjust prompt
 - [Phase 07.1-03]: AdjustDialog at z-20 above input form z-10 — prevents z-index overlap
+- [Phase 07.1-03]: WhatsApp card always uses section.body.trim() fallback — removes gray MemoizedMarkdown fallback path
+- [Phase 07.1-03]: JourneyScreenCard parses Headline/Body copy/CTA via parseScreenSections() multi-variant regex
+- [Phase 07.1-03]: Adherence score accordion starts collapsed (expandedDims empty Set, showAll false); auto-expand on score arrival removed
+- [Phase 07.1-03]: SectionedMessage in markdown-message.tsx uses ANALYSIS_RE to route sections to accordion vs card
 
 ### Roadmap Evolution
 
@@ -156,6 +160,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-21
-Stopped at: Completed 07.1-03-PLAN.md — checkpoint task 3 awaiting human verification
+Last session: 2026-02-22
+Stopped at: Completed 07.1-03-PLAN.md — Phase 7.1 fully complete, human verification approved, post-verify fixes committed
 Resume file: None
