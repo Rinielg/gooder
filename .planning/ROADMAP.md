@@ -156,12 +156,14 @@ Plans:
 
 ### Phase 07.1.1: Structured Output Renderers (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
+**Goal:** Replace the JSON summary card stub in page.tsx with five typed React renderer components that visually represent each channel type as it would appear to end-users — email client preview, iMessage bubble, iOS notification, horizontal wireframe screen cards, and ad preview strip
 **Depends on:** Phase 7.1
-**Plans:** 0 plans
+**Requirements:** RENDER-01, RENDER-02, RENDER-03, RENDER-04, RENDER-05, RENDER-06
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 07.1.1 to break down)
+- [ ] 07.1.1-01-PLAN.md — Five typed renderer components (email/sms/push/ux-journey/ad-copy) + StructuredOutputRenderer orchestrator with multi-tier Tabs grouping
+- [ ] 07.1.1-02-PLAN.md — Wire StructuredOutputRenderer into page.tsx isValidJSON branch + human verify
 
 ### Phase 8: Polish & Responsive QA
 **Goal**: The entire app feels premium through consistent microinteractions, helpful tooltips, and verified responsive behavior
@@ -196,8 +198,9 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 6. Chat Interface Core | 0/4 | Complete    | 2026-02-20 |
 | 7. Chat Scoring & Figma Preview | 0/2 | Complete    | 2026-02-22 |
 | 7.1. Structured Output Cards | 0/3 | Complete    | 2026-02-22 |
+| 7.1.1. Structured Output Renderers | 0/2 | Planned    | - |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-17*
-*Last updated: 2026-02-21*
+*Last updated: 2026-02-22*
