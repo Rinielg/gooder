@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 Phase: 7.1 of 8 (Structured Output Cards)
 Plan: 3 of 3 in current phase
 Status: Complete
-Last activity: 2026-02-22 -- Completed 07.1-03-PLAN.md — human verification approved; post-verify fixes committed (WhatsApp fallback, UX Journey parsing, accordion default collapsed)
+Last activity: 2026-02-22 -- Completed 07.1.1-02-PLAN.md — StructuredOutputRenderer wired into chat page.tsx; extractJSON() post-verify fix committed
 
 Progress: [██████████] 100%
 
@@ -68,6 +68,7 @@ Progress: [██████████] 100%
 | Phase 07.1 P03 | ~20min | 3 tasks + post-verify fixes | 4 files |
 | Phase 07 P02 | 10 | 3 tasks | 1 files |
 | Phase 07.1.1 P01 | 2 | 2 tasks | 6 files |
+| Phase 07.1.1 P02 | 15min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,7 @@ Recent decisions affecting current work:
 - [Phase 07.1.1]: OutputCardActions reused from output-card.tsx in each sub-renderer — not in orchestrator and not duplicated
 - [Phase 07.1.1]: groupChannels() firstIndex tracking — ChannelGroup.firstIndex preserves position in original channels array for onAdjust(channelIndex) callback
 - [Phase 07.1.1]: Multi-tier Tabs omit tier badge from card header — tab trigger labels serve that purpose
+- [Phase 07.1.1-02]: extractJSON() preprocessing added before isValidJSON() and JSON.parse() — Output Agent wraps JSON in code fences; stripping client-side makes renderer robust to both formats
 
 ### Roadmap Evolution
 
@@ -170,5 +172,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 07.1.1-01-PLAN.md — five typed channel renderers + StructuredOutputRenderer orchestrator created and committed
+Stopped at: Completed 07.1.1-02-PLAN.md — StructuredOutputRenderer wired into page.tsx; extractJSON() fix committed post human-verify
 Resume file: None
