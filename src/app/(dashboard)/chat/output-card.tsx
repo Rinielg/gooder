@@ -170,7 +170,7 @@ interface OutputCardActionsProps {
   onAdjust: () => void;
 }
 
-function OutputCardActions({ body, onSave, onAdjust }: OutputCardActionsProps) {
+export function OutputCardActions({ body, onSave, onAdjust }: OutputCardActionsProps) {
   function handleCopy() {
     navigator.clipboard.writeText(body);
     toast.success("Copied");
