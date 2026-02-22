@@ -90,11 +90,21 @@ function scoreBarColor(score: number): string {
   return "bg-red-500";
 }
 
-/** Check if a string is valid JSON — used to route structured output to the JSON renderer */
+/** Strip markdown code fences from a string — handles ```json ... ``` wrapping from the model */
+function extractJSON(str: string): string {
+  const trimmed = str.trim();
+  // Match ```json ... ``` or ``` ... ``` blocks
+  const fenced = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
+  if (fenced) return fenced[1].trim();
+  return trimmed;
+}
+
+/** Check if a string is valid JSON (after stripping code fences) */
 function isValidJSON(str: string): boolean {
-  if (!str || !str.trim().startsWith("{")) return false;
+  const cleaned = extractJSON(str);
+  if (!cleaned || !cleaned.startsWith("{")) return false;
   try {
-    JSON.parse(str);
+    JSON.parse(cleaned);
     return true;
   } catch {
     return false;
@@ -533,7 +543,7 @@ export default function ChatPage() {
       let outputType: OutputType = "ux_journey";
       // Try to detect output type from structured JSON first
       try {
-        const parsed = JSON.parse(messageContent);
+        const parsed = JSON.parse(extractJSON(messageContent));
         if (parsed?.channels?.length > 0) {
           const firstChannelType = parsed.channels[0].type as string;
           if (firstChannelType === "email") outputType = "email";
@@ -738,7 +748,7 @@ export default function ChatPage() {
                     ) : isValidJSON(message.content) ? (
                       (() => {
                         try {
-                          const output: StructuredOutput = JSON.parse(message.content);
+                          const output: StructuredOutput = JSON.parse(extractJSON(message.content));
                           return (
                             <StructuredOutputRenderer
                               output={output}
