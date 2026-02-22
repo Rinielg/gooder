@@ -79,7 +79,7 @@ Each task was committed atomically:
 1. **Task 1: Create ProfileCard component** - `fd56c3b` (feat)
 2. **Task 2: Redesign profiles list page** - `544d7de` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `953a7a4` (docs: complete plan)
 
 ## Files Created/Modified
 - `src/components/features/profiles/profile-card.tsx` - Presentational ProfileCard accepting BrandProfile prop, renders card link with status badge and completeness info
