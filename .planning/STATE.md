@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 07.1 P02 | 1 | 1 tasks | 1 files |
 | Phase 07.1 P03 | ~20min | 3 tasks + post-verify fixes | 4 files |
 | Phase 07 P02 | 10 | 3 tasks | 1 files |
+| Phase 07.1.1 P01 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,10 @@ Recent decisions affecting current work:
 - [Phase 07-02]: Score thresholds updated from 8/6 to 7/5 in page.tsx to match score-card.tsx and CONTEXT.md
 - [Phase 07-02]: handleImprove per-dimension fires targeted sendMessage prompt; overall delegates to handleRegenerate AlertDialog flow
 - [Phase 07-02]: Figma panel moved inside scroll container to appear in conversation flow rather than fixed border-top strip above input
+- [Phase 07.1.1]: renderers/ subdirectory pattern — all five channel renderers live in src/app/(dashboard)/chat/renderers/ for navigability
+- [Phase 07.1.1]: OutputCardActions reused from output-card.tsx in each sub-renderer — not in orchestrator and not duplicated
+- [Phase 07.1.1]: groupChannels() firstIndex tracking — ChannelGroup.firstIndex preserves position in original channels array for onAdjust(channelIndex) callback
+- [Phase 07.1.1]: Multi-tier Tabs omit tier badge from card header — tab trigger labels serve that purpose
 
 ### Roadmap Evolution
 
@@ -165,5 +170,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 07-02-PLAN.md — ScoreCard wired into page.tsx, Figma panel repositioned inside scroll container, human verification approved
+Stopped at: Completed 07.1.1-01-PLAN.md — five typed channel renderers + StructuredOutputRenderer orchestrator created and committed
 Resume file: None
