@@ -186,7 +186,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 5. Feature Pages & Settings | 0/5 | Not started | - |
 | 6. Chat Interface Core | 0/4 | Complete    | 2026-02-20 |
 | 7. Chat Scoring & Figma Preview | 0/2 | Not started | - |
-| 7.1. Structured Output Cards | 0/3 | Planned | - |
+| 7.1. Structured Output Cards | 0/3 | Complete    | 2026-02-22 |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
 ---
