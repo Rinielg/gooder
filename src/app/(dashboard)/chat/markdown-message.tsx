@@ -4,7 +4,7 @@ import { memo, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ShikiHighlighter, { isInlineCode } from "react-shiki";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CodeBlock({
@@ -162,3 +162,137 @@ export const MemoizedMarkdown = memo(
 );
 
 MemoizedMarkdown.displayName = "MemoizedMarkdown";
+
+// ── Section splitter ─────────────────────────────────────────────────────────
+// Splits AI response by ### headings into titled sections.
+
+interface MessageSection {
+  title: string;
+  body: string;
+}
+
+function splitSections(content: string): MessageSection[] {
+  const cleaned = content.replace(/\n?\s*^---+\s*$/gm, "").replace(/\n{3,}/g, "\n\n");
+  const parts = cleaned.split(/^###\s+/m);
+  const sections: MessageSection[] = [];
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const nl = trimmed.indexOf("\n");
+    if (nl === -1) {
+      sections.push({ title: trimmed.replace(/\*+/g, "").trim(), body: "" });
+    } else {
+      sections.push({
+        title: trimmed.slice(0, nl).replace(/\*+/g, "").trim(),
+        body: trimmed.slice(nl + 1).trim(),
+      });
+    }
+  }
+
+  const beforeFirst = cleaned.split(/^###\s+/m)[0].trim();
+  if (beforeFirst && sections.length > 0) {
+    sections.unshift({ title: "", body: beforeFirst });
+  }
+
+  return sections.length ? sections : [{ title: "", body: content }];
+}
+
+// Section type detection — analysis sections get accordion treatment
+const ANALYSIS_RE = /^(tone|adherence|compliance|objective|suggestion|score|note|summary|brand\s+voice|voice|quality)/i;
+
+// ── ContentSection ───────────────────────────────────────────────────────────
+// Visual card for UX journey screens, steps, and platforms.
+
+function ContentSection({ title, body, id }: { title: string; body: string; id: string }) {
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      {title && (
+        <div className="px-3 py-2 bg-accent/40 border-b border-border">
+          <span className="text-xs font-semibold text-foreground">{title}</span>
+        </div>
+      )}
+      {body && (
+        <div className="px-3 py-3">
+          <MemoizedMarkdown content={body} id={id} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AnalysisSection ──────────────────────────────────────────────────────────
+// Accordion card for Tone, Adherence, Compliance, Objectives, Suggestions, etc.
+
+function AnalysisSection({ title, body, id }: { title: string; body: string; id: string }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+      >
+        <span className="text-xs font-semibold text-foreground">{title}</span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          {body && (
+            <div className="px-3 py-3 border-t border-border">
+              <MemoizedMarkdown content={body} id={id} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SectionedMessage ─────────────────────────────────────────────────────────
+// Renders AI responses with ### headings as individual containers.
+// Content sections (Screen, Step, Platform) → visual card.
+// Analysis sections (Tone, Adherence, Compliance, etc.) → collapsible accordion.
+// Responses with no ### headings fall back to plain MemoizedMarkdown.
+
+export function SectionedMessage({ content, id }: { content: string; id: string }) {
+  const sections = useMemo(() => splitSections(content), [content]);
+
+  const titledCount = sections.filter((s) => s.title).length;
+
+  // Single block or no titled sections — plain rendering
+  if (titledCount < 2) {
+    return <MemoizedMarkdown content={content} id={id} />;
+  }
+
+  return (
+    <div className="space-y-2">
+      {sections.map((section, i) => {
+        // Untitled intro block — render inline
+        if (!section.title) {
+          return section.body ? (
+            <div key={`${id}-intro`} className="text-sm">
+              <MemoizedMarkdown content={section.body} id={`${id}-intro`} />
+            </div>
+          ) : null;
+        }
+
+        const sectionId = `${id}-s${i}`;
+        return ANALYSIS_RE.test(section.title) ? (
+          <AnalysisSection key={sectionId} title={section.title} body={section.body} id={sectionId} />
+        ) : (
+          <ContentSection key={sectionId} title={section.title} body={section.body} id={sectionId} />
+        );
+      })}
+    </div>
+  );
+}

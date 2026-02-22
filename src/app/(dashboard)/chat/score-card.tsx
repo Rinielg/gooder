@@ -133,17 +133,16 @@ export function ScoreCard({
   onImprove,
   isSuperseded,
 }: ScoreCardProps) {
-  // Per-dimension row expand state — independent of outer card toggle
-  const [expandedDims, setExpandedDims] = useState<Set<string>>(new Set())
-  // Show passing dimensions toggle
-  const [showAll, setShowAll] = useState(false)
-
-  // Failing-first sort
+  // Failing-first sort — computed before state so we can use allKeys for initial state
   type DimEntry = [string, { score: number; weight: number; notes: string; flags: any[] }]
   const entries = Object.entries(score.scores) as DimEntry[]
   const failing = entries.filter(([, d]) => d.score < 7)
   const passing = entries.filter(([, d]) => d.score >= 7)
   const sorted = [...failing, ...passing]
+
+  // Dimension rows start collapsed; passing dimensions hidden until "Show all" clicked
+  const [expandedDims, setExpandedDims] = useState<Set<string>>(new Set())
+  const [showAll, setShowAll] = useState(false)
 
   return (
     <div

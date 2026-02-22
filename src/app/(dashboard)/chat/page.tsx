@@ -278,8 +278,6 @@ export default function ChatPage() {
 
         const score: AdherenceScore = await res.json();
         setAdherenceScores((prev) => ({ ...prev, [messageId]: score }));
-        // Auto-expand the score card when a score arrives
-        setExpandedIds((prev) => new Set(prev).add(messageId));
       } catch (err) {
         console.error("Adherence scoring error:", err);
       } finally {

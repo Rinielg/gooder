@@ -324,21 +324,18 @@ function StructuredFieldCard({ section, outputType, id }: StructuredFieldCardPro
   }
 
   // WhatsApp: message or body with 1024-char count
+  // Fall back to full section body if no labeled field found — always show as styled text not gray markdown
   if (outputType === "whatsapp") {
-    const text = fields.message ?? fields.body ?? "";
+    const text = fields.message ?? fields.body ?? section.body.trim();
     return (
       <div className="px-4 py-4">
-        {text ? (
-          <div className={fieldWrapperClass}>
-            <p className={labelClass}>
-              Message
-              <CharCount text={text} limit={CHAR_LIMITS.whatsapp} />
-            </p>
-            <p className={valueClass}>{text}</p>
-          </div>
-        ) : (
-          <MemoizedMarkdown content={section.body} id={id} />
-        )}
+        <div className={fieldWrapperClass}>
+          <p className={labelClass}>
+            Message
+            <CharCount text={text} limit={CHAR_LIMITS.whatsapp} />
+          </p>
+          <p className={valueClass}>{text}</p>
+        </div>
       </div>
     );
   }
@@ -359,17 +356,60 @@ interface JourneyScreenCardProps {
   isLast: boolean;
 }
 
+// Parse a screen's content for Headline, Body Copy, and CTA sections
+function parseScreenSections(content: string) {
+  const clean = content.replace(/\*\*/g, "");
+  const extract = (pattern: RegExp) => clean.match(pattern)?.[1]?.trim();
+  const headline = extract(/^(?:headline|heading|title|screen\s+title):\s*(.+)$/im)
+    ?? extract(/^#+\s+(.+)$/m); // first markdown heading as fallback
+  const body = extract(/^(?:body\s+copy|body|copy|description|content):\s*([\s\S]+?)(?=\n(?:cta|headline|heading|call to action):|$)/im);
+  const cta = extract(/^(?:cta|call to action|button|primary\s+action)(?:\s+(?:text|label|copy))?:\s*(.+)$/im);
+  // If none found, treat entire content as body
+  const rawBody = !headline && !body && !cta ? content.trim() : undefined;
+  return { headline, body, cta, rawBody };
+}
+
 const JourneyScreenCard = memo(function JourneyScreenCard({
   screen,
   index,
   isLast,
 }: JourneyScreenCardProps) {
+  const { headline, body, cta, rawBody } = parseScreenSections(screen.content);
   return (
     <>
-      <div className="w-[400px] flex-shrink-0 rounded-lg border border-border bg-white p-4 space-y-2">
-        <p className="text-xs font-semibold text-foreground">{screen.title}</p>
-        <div className="text-xs [&_p]:text-xs [&_li]:text-xs">
-          <MemoizedMarkdown content={screen.content} id={`journey-screen-${index}`} />
+      <div className="w-[400px] flex-shrink-0 rounded-lg border border-border bg-white shadow-elevation-1 overflow-hidden">
+        {/* Screen title / step label */}
+        <div className="px-4 py-2.5 bg-accent/40 border-b border-border">
+          <p className="text-xs font-semibold text-foreground">{screen.title}</p>
+        </div>
+        <div className="p-4 space-y-3">
+          {rawBody ? (
+            // No structured fields — render content as markdown
+            <div className="text-xs [&_p]:text-xs [&_li]:text-xs">
+              <MemoizedMarkdown content={rawBody} id={`journey-screen-${index}`} />
+            </div>
+          ) : (
+            <>
+              {headline && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">Headline</p>
+                  <p className="text-sm font-medium text-foreground leading-snug">{headline}</p>
+                </div>
+              )}
+              {body && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">Body copy</p>
+                  <p className="text-xs text-foreground leading-relaxed">{body}</p>
+                </div>
+              )}
+              {cta && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">CTA</p>
+                  <span className="inline-block px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">{cta}</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
       {!isLast && (
