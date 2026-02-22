@@ -177,6 +177,117 @@ export interface Definition {
   updated_at: string;
 }
 
+// ── Structured Output Schema ─────────────────────────────────────────────
+// The typed tree returned by the Output Agent as a JSON string.
+// Parse with: const output: StructuredOutput = JSON.parse(message.content)
+
+export type ChannelType = "email" | "sms" | "push_notification" | "ux_journey" | "ad_copy";
+export type TierLabel = "Classic" | "Plus" | "VIP";
+
+export interface EmailSection {
+  type: "hero" | "body" | "cta" | "footer";
+  headline?: string;
+  subheadline?: string;
+  content?: string;
+  label?: string;
+  supporting_text?: string;
+}
+
+export interface EmailChannel {
+  type: "email";
+  tier: TierLabel | null;
+  subject: string;
+  preheader: string;
+  sections: EmailSection[];
+}
+
+export interface SMSChannel {
+  type: "sms";
+  tier: TierLabel | null;
+  message: string;
+  character_count: number;
+}
+
+export interface PushChannel {
+  type: "push_notification";
+  tier: TierLabel | null;
+  title: string;
+  body: string;
+  deep_link_label: string | null;
+}
+
+export interface UXJourneyStep {
+  step: number;
+  screen_name: string;
+  heading: string | null;
+  body_copy: string;
+  cta_label: string | null;
+  helper_text: string | null;
+  error_text: string | null;
+}
+
+export interface UXJourneyChannel {
+  type: "ux_journey";
+  tier: TierLabel | null;
+  journey_name: string;
+  steps: UXJourneyStep[];
+}
+
+export interface AdCopyChannel {
+  type: "ad_copy";
+  tier: TierLabel | null;
+  headline: string;
+  body: string;
+  cta_label: string;
+}
+
+export type Channel =
+  | EmailChannel
+  | SMSChannel
+  | PushChannel
+  | UXJourneyChannel
+  | AdCopyChannel;
+
+export interface ToneDecision {
+  lifecycle_stage: string;
+  situation: string;
+  tier: string | null;
+  emotional_gradient: string;
+  conflict_resolution_applied: string | null;
+}
+
+export interface SelfScore {
+  overall: number;
+  voice_alignment: number;
+  tone_match: number;
+  tier_compliance: number | null;
+  terminology: number;
+  readability: number;
+  channel_compliance: number;
+  lifecycle_fit: number;
+  module_compliance: number;
+  reasoning: string;
+}
+
+export interface OutputObjectiveScore {
+  objective: string;
+  score: number;
+  reasoning: string;
+}
+
+/**
+ * The complete structured response from the Output Agent.
+ * message.content on the frontend is a JSON string matching this interface.
+ */
+export interface StructuredOutput {
+  channels: Channel[];
+  tone_decision: ToneDecision;
+  self_score: SelfScore;
+  objective_scores: OutputObjectiveScore[];
+  suggestions: string[];
+  compliance_notes: string[];
+}
+
 // ── Saved Outputs ────────────────────────────────────────────────────────
 export type OutputType = "ux_journey" | "email" | "sms" | "push";
 

@@ -156,13 +156,27 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Stream
+    // Stream — the Output Agent returns pure JSON.
+    // message.content on the frontend will be a JSON string matching StructuredOutput.
+    // Parse with: JSON.parse(message.content) to get the typed tree.
     const result = streamText({
       model: anthropic(selectedModel),
       system: systemPromptContent,
       messages: convertedMessages,
       maxOutputTokens: 4096,
-      temperature: 0.7,
+      // Lower temperature improves JSON schema compliance
+      temperature: 0.4,
+      // Validate the completed output is parseable JSON; log a warning if not
+      onFinish: ({ text }) => {
+        try {
+          JSON.parse(text);
+        } catch {
+          console.warn(
+            "[Output Agent] Response was not valid JSON. The model may have deviated from the schema.",
+            text.slice(0, 200)
+          );
+        }
+      },
     });
 
     return result.toUIMessageStreamResponse();

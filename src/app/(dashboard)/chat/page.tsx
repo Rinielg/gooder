@@ -89,6 +89,17 @@ function scoreBarColor(score: number): string {
   return "bg-red-500";
 }
 
+/** Check if a string is valid JSON — used to route structured output to the JSON renderer */
+function isValidJSON(str: string): boolean {
+  if (!str || !str.trim().startsWith("{")) return false;
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 interface ContentSection {
   title: string;
   body: string;
@@ -519,10 +530,23 @@ export default function ChatPage() {
       if (!membership) return;
 
       let outputType: OutputType = "ux_journey";
-      const lower = messageContent.toLowerCase();
-      if (lower.includes("subject line") || lower.includes("email")) outputType = "email";
-      else if (lower.includes("sms") || lower.includes("160")) outputType = "sms";
-      else if (lower.includes("push notification") || lower.includes("push copy")) outputType = "push";
+      // Try to detect output type from structured JSON first
+      try {
+        const parsed = JSON.parse(messageContent);
+        if (parsed?.channels?.length > 0) {
+          const firstChannelType = parsed.channels[0].type as string;
+          if (firstChannelType === "email") outputType = "email";
+          else if (firstChannelType === "sms") outputType = "sms";
+          else if (firstChannelType === "push_notification") outputType = "push";
+          else if (firstChannelType === "ux_journey") outputType = "ux_journey";
+        }
+      } catch {
+        // Fallback: keyword detection for non-JSON content
+        const lower = messageContent.toLowerCase();
+        if (lower.includes("subject line") || lower.includes("email")) outputType = "email";
+        else if (lower.includes("sms") || lower.includes("160")) outputType = "sms";
+        else if (lower.includes("push notification") || lower.includes("push copy")) outputType = "push";
+      }
 
       const score = adherenceScores[messageId] ?? null;
 
@@ -701,20 +725,75 @@ export default function ChatPage() {
                   >
                     {message.role === "user" ? (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    ) : isCurrentlyStreaming || !isMultiSectionRendered ? (
+                    ) : isCurrentlyStreaming ? (
                       <MemoizedMarkdown content={message.content} id={message.id} />
-                    ) : (
+                    ) : isMultiSectionRendered ? (
                       <OutputCardGroup
                         sections={sections}
                         messageId={message.id}
                         onSave={saveSection}
                         onAdjust={openAdjust}
                       />
+                    ) : isValidJSON(message.content) ? (
+                      // Structured JSON output — render a summary card
+                      // Full channel-specific rendering is handled in a future task
+                      (() => {
+                        try {
+                          const output = JSON.parse(message.content);
+                          const channels: { type: string; tier?: string | null }[] = output.channels || [];
+                          return (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {channels.map((ch, i) => (
+                                  <span
+                                    key={i}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium"
+                                  >
+                                    {ch.type.replace("_", " ")}
+                                    {ch.tier ? ` · ${ch.tier}` : ""}
+                                  </span>
+                                ))}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {channels.length} channel{channels.length !== 1 ? "s" : ""} generated.
+                                Save or copy to access the structured content.
+                              </p>
+                              <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                                <button
+                                  onClick={() => saveOutput(message.id, message.content)}
+                                  className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(message.content);
+                                    toast.success("Copied to clipboard");
+                                  }}
+                                  className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                  Copy JSON
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        } catch {
+                          return (
+                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {message.content}
+                            </div>
+                          );
+                        }
+                      })()
+                    ) : (
+                      <MemoizedMarkdown content={message.content} id={message.id} />
                     )}
                   </div>
 
-                  {/* Whole-message Save + Copy — HIDDEN when OutputCardGroup renders (per-card buttons replace them) */}
-                  {message.role === "assistant" && message.content && !isMultiSectionRendered && (
+                  {/* Whole-message Save + Copy — HIDDEN when OutputCardGroup or JSON summary card renders (per-card buttons replace them) */}
+                  {message.role === "assistant" && message.content && !isMultiSectionRendered && !isValidJSON(message.content) && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => saveOutput(message.id, message.content)}

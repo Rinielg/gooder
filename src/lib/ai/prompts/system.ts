@@ -183,39 +183,108 @@ CRITICAL RULES:
 8. GENERATE → SELF-SCORE → REFINE if below threshold`);
 
   // ── Output Format ──────────────────────────────────────────────────────
-  sections.push(`\n## OUTPUT FORMAT
-For every content generation, structure your response as:
+  sections.push(`\n## OUTPUT FORMAT — CRITICAL
 
-### Generated Content
-[The actual content, structured appropriately for the content type]
+You MUST respond with ONLY a valid JSON object. Your entire response must be directly parseable by JSON.parse().
 
-### Tone Decision Summary
-- Lifecycle Stage: [stage]
-- Situation: [situation]
-- Tier: [tier or "N/A"]
-- Emotional Gradient: [level]
-- Channel: [channel]
-- Model Used: [sonnet/opus]
+Rules:
+- NO markdown. NO prose. NO code fences. NO preamble or explanation outside the JSON.
+- Your first character must be { and your last character must be }
+- If the user requests multiple channels, include ALL of them in the "channels" array
+- If the user requests content for multiple tiers, create one entry per tier per channel type
+- NEVER include markdown syntax (*, #, --, ===, __) inside any string values
+- ALL copy must be plain prose strings only
 
-### Adherence Self-Score
-- Overall: [0-100]
-- Voice Alignment: [0-100]
-- Tone Match: [0-100]
-- Tier Compliance: [0-100 or N/A]
-- Terminology: [0-100]
-- Readability: [0-100]
-- Channel Compliance: [0-100]
-- Lifecycle Fit: [0-100]
-- Module Compliance: [0-100]
+TOP-LEVEL SCHEMA:
+{
+  "channels": [ one object per channel requested, see channel schemas below ],
+  "tone_decision": {
+    "lifecycle_stage": "string",
+    "situation": "string",
+    "tier": "string or null",
+    "emotional_gradient": "string",
+    "conflict_resolution_applied": "string or null"
+  },
+  "self_score": {
+    "overall": 0-100,
+    "voice_alignment": 0-100,
+    "tone_match": 0-100,
+    "tier_compliance": 0-100 or null,
+    "terminology": 0-100,
+    "readability": 0-100,
+    "channel_compliance": 0-100,
+    "lifecycle_fit": 0-100,
+    "module_compliance": 0-100,
+    "reasoning": "1-2 sentence plain text explanation of the self-score"
+  },
+  "objective_scores": [
+    { "objective": "string", "score": 0-100, "reasoning": "string" }
+  ],
+  "suggestions": ["plain text suggestion"],
+  "compliance_notes": ["plain text compliance note"]
+}
 
-### Objective Scores
-[For each active objective: score and brief reasoning]
+CHANNEL SCHEMAS — use the correct schema for each channel type the user requests:
 
-### Suggestions
-[2-3 alternative phrasings or improvements]
+EMAIL:
+{
+  "type": "email",
+  "tier": "Classic" or "Plus" or "VIP" or null,
+  "subject": "string",
+  "preheader": "string",
+  "sections": [
+    { "type": "hero", "headline": "string", "subheadline": "string or null" },
+    { "type": "body", "content": "string" },
+    { "type": "cta", "label": "string", "supporting_text": "string or null" },
+    { "type": "footer", "content": "string or null" }
+  ]
+}
 
-### Compliance Notes
-[Any required disclosures, warnings, or flags]`);
+SMS:
+{
+  "type": "sms",
+  "tier": "Classic" or "Plus" or "VIP" or null,
+  "message": "string — complete ready-to-send message",
+  "character_count": number
+}
+
+PUSH NOTIFICATION:
+{
+  "type": "push_notification",
+  "tier": "Classic" or "Plus" or "VIP" or null,
+  "title": "string — max 50 characters",
+  "body": "string — max 100 characters",
+  "deep_link_label": "string or null"
+}
+
+UX JOURNEY:
+{
+  "type": "ux_journey",
+  "tier": "Classic" or "Plus" or "VIP" or null,
+  "journey_name": "string",
+  "steps": [
+    {
+      "step": 1,
+      "screen_name": "string",
+      "heading": "string or null",
+      "body_copy": "string",
+      "cta_label": "string or null",
+      "helper_text": "string or null",
+      "error_text": "string or null"
+    }
+  ]
+}
+
+AD COPY:
+{
+  "type": "ad_copy",
+  "tier": "Classic" or "Plus" or "VIP" or null,
+  "headline": "string",
+  "body": "string",
+  "cta_label": "string"
+}
+
+REMINDER: output ONLY the JSON object. Nothing else. No text before or after the JSON.`);
 
   return sections.join("\n");
 }
@@ -277,9 +346,13 @@ ${standardsBlock}${objectivesBlock}${definitionsBlock}
 ${contentType || "general"}
 
 ## CONTENT TO EVALUATE
+The content below is a JSON object produced by the Output Agent. Score the ACTUAL COPY TEXT within it — the subject lines, body copy, CTA labels, SMS messages, push notification titles, UX journey step copy, etc. Do NOT score the JSON structure itself.
+
 <content_to_evaluate>
 ${generatedContent}
 </content_to_evaluate>
+
+When the content contains multiple channels (e.g. both email and SMS), score the content holistically across all channels. If one channel fails a rule but another passes, reflect this accurately in your dimension scores and flags.
 
 ## SCORING DIMENSIONS (weights)
 Score each dimension 0–10. Provide per-dimension flags and notes.
