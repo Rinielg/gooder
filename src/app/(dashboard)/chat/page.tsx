@@ -16,10 +16,11 @@ import { cn } from "@/lib/utils";
 import { MemoizedMarkdown } from "./markdown-message";
 import { ScoreCard } from "./score-card";
 import { OutputCardGroup, AdjustTarget, DetectedOutputType } from "./output-card";
+import { StructuredOutputRenderer } from "./structured-output-renderer";
 import { AdjustDialog } from "./adjust-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import type { OutputType, AdherenceScore } from "@/types";
+import type { OutputType, AdherenceScore, StructuredOutput } from "@/types";
 
 // ── Figma extraction types ──────────────────────────────────────────────
 interface FigmaComponent {
@@ -735,49 +736,28 @@ export default function ChatPage() {
                         onAdjust={openAdjust}
                       />
                     ) : isValidJSON(message.content) ? (
-                      // Structured JSON output — render a summary card
-                      // Full channel-specific rendering is handled in a future task
                       (() => {
                         try {
-                          const output = JSON.parse(message.content);
-                          const channels: { type: string; tier?: string | null }[] = output.channels || [];
+                          const output: StructuredOutput = JSON.parse(message.content);
                           return (
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {channels.map((ch, i) => (
-                                  <span
-                                    key={i}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium"
-                                  >
-                                    {ch.type.replace("_", " ")}
-                                    {ch.tier ? ` · ${ch.tier}` : ""}
-                                  </span>
-                                ))}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {channels.length} channel{channels.length !== 1 ? "s" : ""} generated.
-                                Save or copy to access the structured content.
-                              </p>
-                              <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-                                <button
-                                  onClick={() => saveOutput(message.id, message.content)}
-                                  className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                  <Save className="w-3.5 h-3.5" />
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(message.content);
-                                    toast.success("Copied to clipboard");
-                                  }}
-                                  className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                  <Copy className="w-3.5 h-3.5" />
-                                  Copy JSON
-                                </button>
-                              </div>
-                            </div>
+                            <StructuredOutputRenderer
+                              output={output}
+                              messageId={message.id}
+                              onSave={() => saveOutput(message.id, message.content)}
+                              onAdjust={(channelIndex) => {
+                                const ch = output.channels[channelIndex];
+                                const typeMap: Record<string, import("./output-card").DetectedOutputType> = {
+                                  email: "email", sms: "sms", push_notification: "push",
+                                  ux_journey: "ux_journey", ad_copy: "generic",
+                                };
+                                openAdjust({
+                                  messageId: message.id,
+                                  sectionTitle: ch?.type ?? "channel",
+                                  sectionBody: JSON.stringify(ch ?? {}),
+                                  outputType: typeMap[ch?.type ?? ""] ?? "generic",
+                                });
+                              }}
+                            />
                           );
                         } catch {
                           return (
