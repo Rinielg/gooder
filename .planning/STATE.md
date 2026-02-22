@@ -66,6 +66,7 @@ Progress: [██████████] 100%
 | Phase 07.1 P01 | 2 | 2 tasks | 1 files |
 | Phase 07.1 P02 | 1 | 1 tasks | 1 files |
 | Phase 07.1 P03 | ~20min | 3 tasks + post-verify fixes | 4 files |
+| Phase 07 P02 | 10 | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,9 @@ Recent decisions affecting current work:
 - [Phase 07.1-03]: JourneyScreenCard parses Headline/Body copy/CTA via parseScreenSections() multi-variant regex
 - [Phase 07.1-03]: Adherence score accordion starts collapsed (expandedDims empty Set, showAll false); auto-expand on score arrival removed
 - [Phase 07.1-03]: SectionedMessage in markdown-message.tsx uses ANALYSIS_RE to route sections to accordion vs card
+- [Phase 07-02]: Score thresholds updated from 8/6 to 7/5 in page.tsx to match score-card.tsx and CONTEXT.md
+- [Phase 07-02]: handleImprove per-dimension fires targeted sendMessage prompt; overall delegates to handleRegenerate AlertDialog flow
+- [Phase 07-02]: Figma panel moved inside scroll container to appear in conversation flow rather than fixed border-top strip above input
 
 ### Roadmap Evolution
 
@@ -161,5 +165,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 07.1-03-PLAN.md — Phase 7.1 fully complete, human verification approved, post-verify fixes committed
+Stopped at: Completed 07-02-PLAN.md — ScoreCard wired into page.tsx, Figma panel repositioned inside scroll container, human verification approved
 Resume file: None
