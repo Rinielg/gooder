@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Auth Pages** - Redesign login and register pages as first end-to-end validation of the new design system
 - [ ] **Phase 5: Feature Pages & Settings** - Redesign all management pages (profiles, standards, objectives, definitions, outputs, settings) with consistent patterns
 - [x] **Phase 6: Chat Interface Core** - Redesign chat layout, message rendering, streaming behavior, markdown display, copy button, and input area (completed 2026-02-20)
-- [ ] **Phase 7: Chat Scoring & Figma Preview** - Redesign adherence score cards with radial progress, dimension expand/collapse, regenerate-with-feedback, and Figma extraction UI
+- [x] **Phase 7: Chat Scoring & Figma Preview** - Redesign adherence score cards with radial progress, dimension expand/collapse, regenerate-with-feedback, and Figma extraction UI (completed 2026-02-22)
 - [ ] **Phase 8: Polish & Responsive QA** - Add microinteractions, contextual tooltips, keyboard hints, consistent transitions, and responsive testing at all breakpoints
 
 ## Phase Details
@@ -147,7 +147,7 @@ Plans:
 **Goal:** Multi-section AI responses render as separate per-type visual cards (email, SMS, push, WhatsApp, UX Journey) with Save, Copy, and Adjust actions, and a targeted Adjust dialog above the input for focused revisions
 **Depends on:** Phase 7
 **Requirements:** OUTCARD-01, OUTCARD-02, OUTCARD-03, OUTCARD-04, OUTCARD-05
-**Plans:** 3 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 07.1-01-PLAN.md — OutputCardGroup + all card variants + type detection + field parsing (output-card.tsx)
@@ -185,7 +185,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8
 | 4. Auth Pages | 0/1 | Not started | - |
 | 5. Feature Pages & Settings | 0/5 | Not started | - |
 | 6. Chat Interface Core | 0/4 | Complete    | 2026-02-20 |
-| 7. Chat Scoring & Figma Preview | 0/2 | Not started | - |
+| 7. Chat Scoring & Figma Preview | 0/2 | Complete    | 2026-02-22 |
 | 7.1. Structured Output Cards | 0/3 | Complete    | 2026-02-22 |
 | 8. Polish & Responsive QA | 0/3 | Not started | - |
 
