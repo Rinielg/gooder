@@ -1,0 +1,10 @@
+{
+  "name": "gooder",
+  "description": "Gooder brand voice skills: train brand profiles, validate tone, and write UX copy with your brand voice applied",
+  "version": "1.0.0",
+  "author": {
+    "name": "Gooder"
+  },
+  "license": "proprietary",
+  "keywords": ["brand-voice", "tone", "ux-writing", "copywriting"]
+}
