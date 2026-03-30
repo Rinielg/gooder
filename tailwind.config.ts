@@ -67,24 +67,19 @@ const config: Config = {
         },
       },
       spacing: {
-        '4.5': '1.125rem',  // 18px
-        '13': '3.25rem',    // 52px
-        '15': '3.75rem',    // 60px
-        '18': '4.5rem',     // 72px
-        '22': '5.5rem',     // 88px
-        '26': '6.5rem',     // 104px
-        '30': '7.5rem',     // 120px
+        '4.5': '1.125rem',
+        '13': '3.25rem',
+        '15': '3.75rem',
+        '18': '4.5rem',
+        '22': '5.5rem',
+        '26': '6.5rem',
+        '30': '7.5rem',
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      // Semantic elevation system
-      // elevation-1: Cards, containers (resting)
-      // elevation-2: Dropdowns, popovers, hover states
-      // elevation-3: Modals, dialogs, overlays
-      // elevation-4: Floating action elements
       boxShadow: {
         'elevation-1': '0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08)',
         'elevation-2': '0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08)',
@@ -100,10 +95,20 @@ const config: Config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s ease-out",
         shimmer: "shimmer 2s linear infinite",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },
