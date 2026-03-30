@@ -4,7 +4,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "./resizable"
-
 const meta: Meta<typeof ResizablePanelGroup> = {
   title: "UI/Resizable",
   tags: ['autodocs'],
@@ -27,7 +26,7 @@ type Story = StoryObj<typeof ResizablePanelGroup>
 
 export const Horizontal: Story = {
   render: () => (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[200px] rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="min-h-[200px] rounded-lg border">
       <ResizablePanel defaultSize={50}>
         <div className="flex h-full items-center justify-center p-6">
           <span className="font-semibold">Panel One</span>
@@ -45,7 +44,7 @@ export const Horizontal: Story = {
 
 export const Vertical: Story = {
   render: () => (
-    <ResizablePanelGroup direction="vertical" className="min-h-[300px] rounded-lg border">
+    <ResizablePanelGroup orientation="vertical" className="min-h-[300px] rounded-lg border">
       <ResizablePanel defaultSize={50}>
         <div className="flex h-full items-center justify-center p-6">
           <span className="font-semibold">Top Panel</span>
@@ -63,7 +62,7 @@ export const Vertical: Story = {
 
 export const WithHandle: Story = {
   render: () => (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[200px] rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="min-h-[200px] rounded-lg border">
       <ResizablePanel defaultSize={30}>
         <div className="flex h-full items-center justify-center p-6">
           <span className="font-semibold">Sidebar</span>
@@ -81,7 +80,7 @@ export const WithHandle: Story = {
 
 export const ThreePanels: Story = {
   render: () => (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[200px] rounded-lg border">
+    <ResizablePanelGroup orientation="horizontal" className="min-h-[200px] rounded-lg border">
       <ResizablePanel defaultSize={25}>
         <div className="flex h-full items-center justify-center p-6">
           <span className="font-semibold">Left</span>
