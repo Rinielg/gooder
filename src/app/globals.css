@@ -23,7 +23,20 @@
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 238 76% 59%;
+    --ring-error: 0 84.2% 60.2%;
+
     --radius: 0.5rem;
+    --radius-none: 0px;
+    --radius-xs: 0.125rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 16px);
+    --radius-4xl: calc(var(--radius) + 24px);
+    --radius-full: 9999px;
+
     --sidebar: 240 4.8% 97%;
     --sidebar-foreground: 240 10% 3.9%;
     --sidebar-accent: 240 4.8% 95.9%;
@@ -37,6 +50,26 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    --font-family-body: 'Geist', sans-serif;
+    --font-family-headings: 'Geist', sans-serif;
+    --heading-1-size: 3rem;
+    --heading-1-weight: 600;
+    --heading-1-line-height: 3rem;
+    --heading-1-letter-spacing: -1.5px;
+    --heading-2-size: 2.25rem;
+    --heading-2-weight: 600;
+    --heading-2-line-height: 2.5rem;
+    --heading-2-letter-spacing: -0.5px;
+    --heading-3-size: 1.5rem;
+    --heading-3-weight: 600;
+    --heading-3-line-height: 2rem;
+    --heading-3-letter-spacing: 0px;
+    --heading-4-size: 1.25rem;
+    --heading-4-weight: 600;
+    --heading-4-line-height: 1.75rem;
+    --heading-4-letter-spacing: 0px;
+    --sidebar-background: 0 0% 98%;
   }
 
   .dark {
@@ -59,6 +92,7 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 238 76% 67%;
+    --ring-error: 0 62.8% 30.6%;
     --sidebar: 240 10% 5.5%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-accent: 240 3.7% 15.9%;
@@ -72,6 +106,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --sidebar-background: 240 5.9% 10%;
   }
 }
 
