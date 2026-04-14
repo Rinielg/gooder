@@ -1,18 +1,7 @@
 import "../src/app/globals.css"
-import React from "react"
 import type { Preview } from '@storybook/nextjs-vite'
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
 
 const preview: Preview = {
-  decorators: [
-    (Story) =>
-      React.createElement(
-        "div",
-        { className: `${GeistSans.variable} ${GeistMono.variable} font-sans` },
-        React.createElement(Story)
-      ),
-  ],
   parameters: {
     controls: {
       matchers: {
