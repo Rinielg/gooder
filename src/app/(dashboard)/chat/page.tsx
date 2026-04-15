@@ -100,16 +100,53 @@ function scoreBarColor(score: number): string {
 /** Strip markdown code fences from a string — handles ```json ... ``` wrapping from the model */
 function extractJSON(str: string): string {
   const trimmed = str.trim();
-  // Match ```json ... ``` or ``` ... ``` blocks (anywhere in the string, not just start/end)
+  // Match ```json ... ``` or ``` ... ``` blocks (anywhere in the string)
   const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
-  if (fenced) return fenced[1].trim();
-  // Try to find a raw JSON object
-  const jsonStart = trimmed.indexOf("{");
-  const jsonEnd = trimmed.lastIndexOf("}");
-  if (jsonStart !== -1 && jsonEnd > jsonStart) {
-    return trimmed.slice(jsonStart, jsonEnd + 1);
+  let raw = fenced ? fenced[1].trim() : trimmed;
+
+  // Find the JSON object boundaries
+  const jsonStart = raw.indexOf("{");
+  if (jsonStart === -1) return raw;
+  const jsonEnd = raw.lastIndexOf("}");
+  if (jsonEnd > jsonStart) {
+    raw = raw.slice(jsonStart, jsonEnd + 1);
+  } else {
+    // Truncated JSON — try to repair by closing open brackets
+    raw = raw.slice(jsonStart);
+    raw = repairTruncatedJSON(raw);
   }
-  return trimmed;
+  return raw;
+}
+
+/** Attempt to repair truncated JSON by closing unclosed brackets/braces and trimming broken values */
+function repairTruncatedJSON(str: string): string {
+  // Trim trailing broken string/value (everything after the last complete value)
+  let repaired = str.replace(/,\s*"[^"]*$/, ""); // trailing broken key
+  repaired = repaired.replace(/,\s*$/, ""); // trailing comma
+  repaired = repaired.replace(/:\s*"[^"]*$/, ': ""'); // broken string value
+
+  // Count open/close brackets
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escape = false;
+
+  for (const ch of repaired) {
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") openBraces++;
+    if (ch === "}") openBraces--;
+    if (ch === "[") openBrackets++;
+    if (ch === "]") openBrackets--;
+  }
+
+  // Close unclosed brackets/braces
+  while (openBrackets > 0) { repaired += "]"; openBrackets--; }
+  while (openBraces > 0) { repaired += "}"; openBraces--; }
+
+  return repaired;
 }
 
 /** Check if a string is valid JSON (after stripping code fences) */

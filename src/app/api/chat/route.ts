@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       model: anthropic(selectedModel),
       system: systemPromptContent,
       messages: convertedMessages,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 16384,
       // Lower temperature improves JSON schema compliance
       temperature: 0.4,
       // Validate the completed output is parseable JSON; log a warning if not
