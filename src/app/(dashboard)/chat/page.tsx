@@ -100,9 +100,15 @@ function scoreBarColor(score: number): string {
 /** Strip markdown code fences from a string — handles ```json ... ``` wrapping from the model */
 function extractJSON(str: string): string {
   const trimmed = str.trim();
-  // Match ```json ... ``` or ``` ... ``` blocks
-  const fenced = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
+  // Match ```json ... ``` or ``` ... ``` blocks (anywhere in the string, not just start/end)
+  const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
   if (fenced) return fenced[1].trim();
+  // Try to find a raw JSON object
+  const jsonStart = trimmed.indexOf("{");
+  const jsonEnd = trimmed.lastIndexOf("}");
+  if (jsonStart !== -1 && jsonEnd > jsonStart) {
+    return trimmed.slice(jsonStart, jsonEnd + 1);
+  }
   return trimmed;
 }
 
@@ -111,8 +117,9 @@ function isValidJSON(str: string): boolean {
   const cleaned = extractJSON(str);
   if (!cleaned || !cleaned.startsWith("{")) return false;
   try {
-    JSON.parse(cleaned);
-    return true;
+    const parsed = JSON.parse(cleaned);
+    // Must have channels array to be a structured output
+    return Array.isArray(parsed.channels);
   } catch {
     return false;
   }
@@ -748,8 +755,10 @@ export default function ChatPage() {
               ? splitIntoSections(message.content)
               : [];
             const titledSections = sections.filter(s => s.title);
+            const isStructuredJSONOuter =
+              message.role === "assistant" && !isCurrentlyStreaming && isValidJSON(message.content);
             const isMultiSectionRendered =
-              message.role === "assistant" && !isCurrentlyStreaming && titledSections.length >= 2;
+              message.role === "assistant" && !isCurrentlyStreaming && !isStructuredJSONOuter && titledSections.length >= 2;
 
             return (
               <div key={message.id} className="space-y-2">
@@ -780,7 +789,8 @@ export default function ChatPage() {
                     )}
                   >
                     {(() => {
-                      const hasStructuredContent = message.role === "assistant" && !isCurrentlyStreaming && (isMultiSectionRendered || isValidJSON(message.content));
+                      const isStructuredJSON = message.role === "assistant" && !isCurrentlyStreaming && isValidJSON(message.content);
+                      const hasStructuredContent = message.role === "assistant" && !isCurrentlyStreaming && (isMultiSectionRendered || isStructuredJSON);
                       const viewMode = viewModes[message.id] ?? "formatted";
                       const showJsonView = hasStructuredContent && viewMode === "json";
 
@@ -819,14 +829,7 @@ export default function ChatPage() {
                             </pre>
                           ) : isCurrentlyStreaming ? (
                             <MemoizedMarkdown content={message.content} id={message.id} />
-                          ) : isMultiSectionRendered ? (
-                            <OutputCardGroup
-                              sections={sections}
-                              messageId={message.id}
-                              onSave={saveSection}
-                              onAdjust={openAdjust}
-                            />
-                          ) : isValidJSON(message.content) ? (
+                          ) : isStructuredJSON ? (
                             (() => {
                               try {
                                 const output: StructuredOutput = JSON.parse(extractJSON(message.content));
@@ -867,7 +870,7 @@ export default function ChatPage() {
                   </div>
 
                   {/* Whole-message Save + Copy — HIDDEN when OutputCardGroup or JSON summary card renders (per-card buttons replace them) */}
-                  {message.role === "assistant" && message.content && !isMultiSectionRendered && !isValidJSON(message.content) && (
+                  {message.role === "assistant" && message.content && !isMultiSectionRendered && !isStructuredJSONOuter && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => saveOutput(message.id, message.content)}
