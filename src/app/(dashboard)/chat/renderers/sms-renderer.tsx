@@ -52,7 +52,7 @@ export function SMSRenderer({ channel, showTierBadge, onSave, onAdjust }: SMSRen
         </p>
       </div>
       {/* Actions */}
-      <OutputCardActions body={channel.message} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={channel.message} outputType="sms" channel={channel} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }

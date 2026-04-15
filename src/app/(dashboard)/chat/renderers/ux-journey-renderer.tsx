@@ -100,7 +100,7 @@ export function UXJourneyRenderer({ channel, showTierBadge, onSave, onAdjust }: 
         </div>
       </div>
       {/* Actions */}
-      <OutputCardActions body={copyText} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={copyText} outputType="ux_journey" channel={channel} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }

@@ -6,21 +6,21 @@ export const MODELS = {
   opus: "claude-opus-4-6" as const,
 };
 
+export const MODEL_OPTIONS = [
+  { id: "auto" as const, label: "Auto Model", description: "Intelligent routing based on task complexity" },
+  { id: MODELS.sonnet, label: "Sonnet 4.5", description: "Fast, high quality" },
+  { id: MODELS.opus, label: "Opus 4.6", description: "Most capable, complex tasks" },
+] as const;
+
 export function getModel(modelId: AIModel) {
   return anthropic(modelId);
 }
 
 /**
  * Select the model for a given task.
- * Currently: Sonnet 4.5 for all tasks.
- *
- * To re-enable intelligent routing, uncomment the block below
- * and change the complex tasks return to MODELS.opus.
+ * Routes complex tasks to Opus, everything else to Sonnet.
  */
 export function selectModelForTask(taskType: string): AIModel {
-  return MODELS.sonnet;
-
-  /* RE-ENABLE INTELLIGENT ROUTING:
   const complexTasks = [
     "full_ux_journey",
     "email_campaign",
@@ -34,7 +34,6 @@ export function selectModelForTask(taskType: string): AIModel {
   }
 
   return MODELS.sonnet;
-  */
 }
 
 /**

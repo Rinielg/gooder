@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+      color: #1a1a1b;
+      background: #fff;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #4f46e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .logo-text {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #71717a;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    }
+    input::placeholder {
+      letter-spacing: 1px;
+      text-transform: none;
+      color: #a1a1aa;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-primary:disabled {
+      background: #a5b4fc;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: center;
+      display: none;
+    }
+    .status.loading {
+      display: block;
+      background: #f0f0ff;
+      color: #4f46e5;
+    }
+    .status.success {
+      display: block;
+      background: #ecfdf5;
+      color: #059669;
+    }
+    .status.error {
+      display: block;
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    .help {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #a1a1aa;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-icon">G</div>
+    <span class="logo-text">Gooder Brand Voice</span>
+  </div>
+
+  <label for="code">Export Code</label>
+  <input
+    id="code"
+    type="text"
+    placeholder="GOODER-XXXX"
+    maxlength="11"
+    autofocus
+  />
+
+  <button class="btn btn-primary" id="create" disabled>
+    Create Frames
+  </button>
+
+  <div class="status" id="status"></div>
+
+  <p class="help">
+    Generate content in Gooder, click "Export for Figma",<br>
+    then enter the code here to create design frames.
+  </p>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    const input = document.getElementById('code');
+    const btn = document.getElementById('create');
+    const status = document.getElementById('status');
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      btn.disabled = val.length < 6;
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !btn.disabled) {
+        btn.click();
+      }
+    });
+
+    btn.addEventListener('click', async () => {
+      const code = input.value.trim().toUpperCase();
+      if (!code) return;
+
+      btn.disabled = true;
+      setStatus('loading', '<span class="spinner"></span>Fetching export data...');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/figma/export/${encodeURIComponent(code)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Export not found');
+        }
+
+        setStatus('loading', '<span class="spinner"></span>Creating frames...');
+
+        parent.postMessage({
+          pluginMessage: {
+            type: 'create-frames',
+            payload: data
+          }
+        }, '*');
+      } catch (err) {
+        setStatus('error', err.message || 'Failed to fetch export');
+        btn.disabled = false;
+      }
+    });
+
+    function setStatus(type, message) {
+      status.className = 'status ' + type;
+      status.innerHTML = message;
+    }
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'done') {
+        setStatus('success', 'Frames created successfully!');
+        btn.disabled = false;
+        input.value = '';
+      }
+
+      if (msg.type === 'error') {
+        setStatus('error', msg.message || 'Something went wrong');
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

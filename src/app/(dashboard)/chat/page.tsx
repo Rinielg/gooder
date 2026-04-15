@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MODEL_OPTIONS } from "@/lib/ai/models";
+import {
   Send, Square, Loader2, Bot, User, Save, Copy,
   Sparkles, Link2, Zap, ChevronDown, ChevronUp,
   AlertTriangle, RefreshCw, ShieldCheck, ShieldX,
@@ -200,8 +207,16 @@ export default function ChatPage() {
   const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
   const prevStatusRef = useRef<string>("idle");
 
+  // View mode toggle per message (formatted vs JSON)
+  const [viewModes, setViewModes] = useState<Record<string, "formatted" | "json">>({});
+
   // Phase 7.1: Adjust dialog state
   const [adjustTarget, setAdjustTarget] = useState<AdjustTarget | null>(null);
+
+  // Model selection state
+  const [selectedModel, setSelectedModel] = useState<string>("auto");
+  const selectedModelRef = useRef<string>("auto");
+  selectedModelRef.current = selectedModel;
 
   // Figma extraction state
   const [figmaExtraction, setFigmaExtraction] = useState<FigmaExtraction | null>(null);
@@ -237,6 +252,9 @@ export default function ChatPage() {
         api: "/api/chat",
         body: () => {
           const b: Record<string, unknown> = { profileId: profileIdRef.current };
+          if (selectedModelRef.current !== "auto") {
+            b.modelOverride = selectedModelRef.current;
+          }
           if (confirmedFigmaRef.current) {
             b.figmaContext = confirmedFigmaRef.current;
             confirmedFigmaRef.current = null; // Clear after sending
@@ -256,6 +274,11 @@ export default function ChatPage() {
 
   const isLoading = status === "streaming" || status === "submitted";
 
+  // Sanitize em dashes as a fallback for platform standards enforcement
+  function sanitizeEmDashes(text: string): string {
+    return text.replace(/\u2014/g, " - ");
+  }
+
   // Build display messages
   const displayMessages = messages.map((m) => ({
     id: m.id,
@@ -263,7 +286,7 @@ export default function ChatPage() {
     content: Array.isArray(m.parts)
       ? m.parts
           .filter((p) => p.type === "text")
-          .map((p) => (p as any).text)
+          .map((p) => sanitizeEmDashes((p as any).text))
           .join("")
       : "",
   }));
@@ -633,8 +656,8 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-end px-6 py-3 border-b border-border">
+        <div className="hidden">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-primary" />
           </div>
@@ -645,10 +668,32 @@ export default function ChatPage() {
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-xs">
-          <Zap className="w-3 h-3 mr-1" />
-          Auto Model
-        </Badge>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+              <Zap className="w-3 h-3" />
+              {MODEL_OPTIONS.find((o) => o.id === selectedModel)?.label ?? "Auto Model"}
+              <ChevronDown className="w-3 h-3 ml-0.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {MODEL_OPTIONS.map((option) => (
+              <DropdownMenuItem
+                key={option.id}
+                onClick={() => setSelectedModel(option.id)}
+                className="flex items-center justify-between gap-4"
+              >
+                <div>
+                  <p className="text-sm font-medium">{option.label}</p>
+                  <p className="text-xs text-muted-foreground">{option.description}</p>
+                </div>
+                {selectedModel === option.id && (
+                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Messages */}
@@ -734,52 +779,91 @@ export default function ChatPage() {
                           )
                     )}
                   >
-                    {message.role === "user" ? (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    ) : isCurrentlyStreaming ? (
-                      <MemoizedMarkdown content={message.content} id={message.id} />
-                    ) : isMultiSectionRendered ? (
-                      <OutputCardGroup
-                        sections={sections}
-                        messageId={message.id}
-                        onSave={saveSection}
-                        onAdjust={openAdjust}
-                      />
-                    ) : isValidJSON(message.content) ? (
-                      (() => {
-                        try {
-                          const output: StructuredOutput = JSON.parse(extractJSON(message.content));
-                          return (
-                            <StructuredOutputRenderer
-                              output={output}
-                              messageId={message.id}
-                              onSave={() => saveOutput(message.id, message.content)}
-                              onAdjust={(channelIndex) => {
-                                const ch = output.channels[channelIndex];
-                                const typeMap: Record<string, import("./output-card").DetectedOutputType> = {
-                                  email: "email", sms: "sms", push_notification: "push",
-                                  ux_journey: "ux_journey", ad_copy: "generic",
-                                };
-                                openAdjust({
-                                  messageId: message.id,
-                                  sectionTitle: ch?.type ?? "channel",
-                                  sectionBody: JSON.stringify(ch ?? {}),
-                                  outputType: typeMap[ch?.type ?? ""] ?? "generic",
-                                });
-                              }}
-                            />
-                          );
-                        } catch {
-                          return (
-                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                              {message.content}
+                    {(() => {
+                      const hasStructuredContent = message.role === "assistant" && !isCurrentlyStreaming && (isMultiSectionRendered || isValidJSON(message.content));
+                      const viewMode = viewModes[message.id] ?? "formatted";
+                      const showJsonView = hasStructuredContent && viewMode === "json";
+
+                      return (
+                        <>
+                          {/* Formatted/JSON toggle for structured content */}
+                          {hasStructuredContent && (
+                            <div className="flex items-center gap-1 mb-3">
+                              <button
+                                className={cn("text-xs px-2 py-0.5 rounded transition-colors", viewMode === "formatted" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground")}
+                                onClick={() => setViewModes((prev) => ({ ...prev, [message.id]: "formatted" }))}
+                              >
+                                Formatted
+                              </button>
+                              <button
+                                className={cn("text-xs px-2 py-0.5 rounded transition-colors", viewMode === "json" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground")}
+                                onClick={() => setViewModes((prev) => ({ ...prev, [message.id]: "json" }))}
+                              >
+                                JSON
+                              </button>
                             </div>
-                          );
-                        }
-                      })()
-                    ) : (
-                      <MemoizedMarkdown content={message.content} id={message.id} />
-                    )}
+                          )}
+
+                          {/* Content rendering */}
+                          {message.role === "user" ? (
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          ) : showJsonView ? (
+                            <pre className="text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap font-mono bg-muted/50 rounded-lg p-3">
+                              <code>{(() => {
+                                try {
+                                  return JSON.stringify(JSON.parse(extractJSON(message.content)), null, 2);
+                                } catch {
+                                  return message.content;
+                                }
+                              })()}</code>
+                            </pre>
+                          ) : isCurrentlyStreaming ? (
+                            <MemoizedMarkdown content={message.content} id={message.id} />
+                          ) : isMultiSectionRendered ? (
+                            <OutputCardGroup
+                              sections={sections}
+                              messageId={message.id}
+                              onSave={saveSection}
+                              onAdjust={openAdjust}
+                            />
+                          ) : isValidJSON(message.content) ? (
+                            (() => {
+                              try {
+                                const output: StructuredOutput = JSON.parse(extractJSON(message.content));
+                                return (
+                                  <StructuredOutputRenderer
+                                    output={output}
+                                    messageId={message.id}
+                                    onSave={() => saveOutput(message.id, message.content)}
+                                    onAdjust={(channelIndex) => {
+                                      const ch = output.channels[channelIndex];
+                                      const typeMap: Record<string, import("./output-card").DetectedOutputType> = {
+                                        email: "email", sms: "sms", push_notification: "push",
+                                        ux_journey: "ux_journey", ad_copy: "generic",
+                                      };
+                                      openAdjust({
+                                        messageId: message.id,
+                                        sectionTitle: ch?.type ?? "channel",
+                                        sectionBody: JSON.stringify(ch ?? {}),
+                                        outputType: typeMap[ch?.type ?? ""] ?? "generic",
+                                      });
+                                    }}
+                                  />
+                                );
+                              } catch {
+                                return (
+                                  <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                                    {message.content}
+                                  </div>
+                                );
+                              }
+                            })()
+                          ) : (
+                            <MemoizedMarkdown content={message.content} id={message.id} />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Whole-message Save + Copy — HIDDEN when OutputCardGroup or JSON summary card renders (per-card buttons replace them) */}

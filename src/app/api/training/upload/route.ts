@@ -194,6 +194,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Check for duplicate file ────────────────────────────────────
+    const { data: existingDoc } = await supabase
+      .from("training_documents")
+      .select("id, file_name, extracted_content, processing_status")
+      .eq("brand_profile_id", profileId)
+      .eq("file_name", file.name)
+      .eq("processing_status", "complete")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
     // ── Read file into buffer ─────────────────────────────────────
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -335,6 +346,13 @@ export async function POST(request: NextRequest) {
         gaps: analysisResult.gaps ?? [],
         confidence: analysisResult.confidence ?? null,
       },
+      ...(existingDoc ? {
+        duplicate: true,
+        existingDocument: {
+          id: existingDoc.id,
+          file_name: existingDoc.file_name,
+        },
+      } : {}),
     });
   } catch (error: any) {
     console.error("Upload error:", error);

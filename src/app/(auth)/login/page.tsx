@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -58,29 +57,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Brand panel — left, hidden on mobile */}
-      <div className="hidden md:flex md:w-[45%] flex-col items-center justify-center bg-primary/5 p-12 relative overflow-hidden">
-        {/* Wordmark */}
-        <div className="flex items-center gap-2 mb-10">
-          <Zap className="w-6 h-6 text-primary" />
-          <span className="text-xl font-semibold tracking-tight">Gooder</span>
-        </div>
-
-        {/* Screenshot */}
-        <div className="w-full max-w-sm shadow-elevation-3 rounded-xl ring-1 ring-border/50 overflow-hidden rotate-[-2deg]">
-          <Image
-            src="/screenshots/dashboard-preview.png"
-            alt="Gooder dashboard preview"
-            width={640}
-            height={400}
-            className="w-full h-auto"
-            priority
-          />
-        </div>
-
-        {/* Tagline */}
-        <p className="mt-10 text-center text-muted-foreground text-sm max-w-xs leading-relaxed">
-          Brand voice that sounds like you — every time.
-        </p>
+      <div className="hidden md:flex md:w-[45%] bg-muted items-end p-10">
+        {/* Logo placeholder — replace with SVG logo when available */}
+        <span className="text-sm font-medium text-muted-foreground tracking-tight">gooder</span>
       </div>
 
       {/* Form panel — right, full width on mobile */}
@@ -119,7 +98,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                 />
               </FormInput>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full rounded-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign in
               </Button>
@@ -130,7 +109,7 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
-              className="text-primary hover:underline font-medium"
+              className="text-foreground underline underline-offset-4 font-medium hover:opacity-80"
             >
               Create one
             </Link>

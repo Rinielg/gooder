@@ -103,7 +103,7 @@ export function EmailRenderer({ channel, showTierBadge, onSave, onAdjust }: Emai
         <EmailRendererContent channel={channel} />
       </div>
       {/* Actions */}
-      <OutputCardActions body={copyText} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={copyText} outputType="email" channel={channel} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }

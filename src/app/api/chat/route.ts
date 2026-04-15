@@ -15,10 +15,11 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, profileId, figmaContext: clientFigmaContext } = body as {
+    const { messages, profileId, figmaContext: clientFigmaContext, modelOverride } = body as {
       messages: UIMessage[];
       profileId?: string;
       figmaContext?: string;
+      modelOverride?: string;
     };
 
     // Require a brand profile for content generation
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     const contentType = detectContentType(userContent);
     const taskComplexity = classifyTaskComplexity(userContent, contentType);
-    const selectedModel = selectModelForTask(taskComplexity);
+    const selectedModel = modelOverride || selectModelForTask(taskComplexity);
 
     // Use client-extracted Figma context if provided, otherwise note the URL
     let figmaContext: string | undefined;

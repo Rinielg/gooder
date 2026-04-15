@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -25,7 +25,14 @@ const ACCEPTED_MIME_TYPES = [
   "text/plain",
 ];
 
-type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error";
+type UploadStatus = "idle" | "uploading" | "processing" | "success" | "error" | "duplicate";
+
+interface DuplicateInfo {
+  existingDocId: string;
+  existingFileName: string;
+  newFields: string[];
+  existingFields: string[];
+}
 
 interface UploadResult {
   id: string;
@@ -68,6 +75,7 @@ export default function TrainProfilePage() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -159,7 +167,19 @@ export default function TrainProfilePage() {
       if (data.analysis) {
         setAnalysisResult(data.analysis as AnalysisResult);
       }
-      setUploadStatus("success");
+
+      // Check if this was a duplicate file
+      if (data.duplicate) {
+        setDuplicateInfo({
+          existingDocId: data.existingDocument.id,
+          existingFileName: data.existingDocument.file_name,
+          newFields: data.analysis?.fields_populated ?? [],
+          existingFields: [],
+        });
+        setUploadStatus("duplicate");
+      } else {
+        setUploadStatus("success");
+      }
 
       // Reload profile to reflect updated completeness and profile_data
       await loadProfile();
@@ -177,16 +197,23 @@ export default function TrainProfilePage() {
     }
   }
 
+  async function handleMultipleFiles(files: FileList | File[]) {
+    const fileArray = Array.from(files);
+    for (const file of fileArray) {
+      await handleFileUpload(file);
+    }
+  }
+
   function handleFileDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileUpload(file);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) handleMultipleFiles(files);
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) handleFileUpload(file);
+    const files = e.target.files;
+    if (files && files.length > 0) handleMultipleFiles(files);
     e.target.value = "";
   }
 
@@ -230,6 +257,20 @@ export default function TrainProfilePage() {
       toast.error("Failed to activate profile");
       setActivating(false);
       return;
+    }
+
+    // Auto-select only if this is the first active profile
+    const { count } = await supabase
+      .from("brand_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", profile.workspace_id)
+      .eq("status", "active");
+
+    if (count === 1) {
+      localStorage.setItem("bvp_active_profile", profile.id);
+      window.dispatchEvent(
+        new CustomEvent("bvp-profile-change", { detail: { profileId: profile.id } })
+      );
     }
 
     toast.success("Profile activated!");
@@ -304,7 +345,7 @@ export default function TrainProfilePage() {
                 ) : (
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                 )}
-                Activate Profile
+                {profile.status === "active" ? "Update & Activate Profile" : "Activate Profile"}
               </Button>
             )}
             <Badge variant="outline" className="text-xs">
@@ -325,210 +366,317 @@ export default function TrainProfilePage() {
         </div>
       </div>
 
+      {/* Hidden file input — always in DOM so it can be triggered from any upload state */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={ACCEPTED_EXTENSIONS.join(",")}
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
-          {/* File Drop Zone */}
-          {uploadStatus === "idle" && (
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleFileDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors",
-                isDragging
-                  ? "border-amber-500 bg-amber-500/5"
-                  : "border-border hover:border-amber-500/50 hover:bg-accent/50"
-              )}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_EXTENSIONS.join(",")}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <Upload className={cn(
-                "w-8 h-8 mx-auto mb-3",
-                isDragging ? "text-amber-500" : "text-muted-foreground"
-              )} />
-              <p className="text-sm font-medium mb-1">
-                {isDragging ? "Drop file here" : "Upload brand documents"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Drag & drop or click to browse. Supports PDF, DOCX, MD, TXT (max 10MB)
-              </p>
-            </div>
-          )}
+          {/* Chat messages with upload UI inserted after first assistant message */}
+          {(() => {
+            let uploadInserted = false;
+            const hasAssistantMessage = displayMessages.some((m) => m.role === "assistant");
 
-          {/* Upload Progress */}
-          {(uploadStatus === "uploading" || uploadStatus === "processing") && (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {uploadStatus === "uploading"
-                        ? "Uploading document..."
-                        : "Analyzing document for brand voice attributes..."}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {uploadStatus === "processing"
-                        ? "Extracting text and identifying voice patterns. This may take a moment."
-                        : "Please wait..."}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Upload Error */}
-          {uploadStatus === "error" && (
-            <Card className="border-destructive/50">
-              <CardContent className="py-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-destructive">Upload failed</p>
-                    <p className="text-xs text-muted-foreground mt-1">{uploadError}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setUploadStatus("idle")}
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Upload Success */}
-          {uploadStatus === "success" && uploadResult && (
-            <Card className="border-green-500/30">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    <CardTitle className="text-base">Document Uploaded</CardTitle>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => {
-                      setUploadStatus("idle");
-                      setUploadResult(null);
-                      setAnalysisResult(null);
+            const uploadUI = (
+              <>
+                {/* File Drop Zone */}
+                {uploadStatus === "idle" && (
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
                     }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleFileDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      "border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors",
+                      isDragging
+                        ? "border-amber-500 bg-amber-500/5"
+                        : "border-border hover:border-amber-500/50 hover:bg-accent/50"
+                    )}
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
-                  <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{uploadResult.file_name}</p>
+                    <Upload className={cn(
+                      "w-8 h-8 mx-auto mb-3",
+                      isDragging ? "text-amber-500" : "text-muted-foreground"
+                    )} />
+                    <p className="text-sm font-medium mb-1">
+                      {isDragging ? "Drop file here" : "Upload brand documents"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatFileSize(uploadResult.file_size)} &middot;{" "}
-                      {uploadResult.word_count.toLocaleString()} words &middot;{" "}
-                      {uploadResult.extraction_method}
+                      Drag & drop or click to browse. Supports PDF, DOCX, MD, TXT (max 10MB)
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs flex-shrink-0">
-                    {uploadResult.file_type.toUpperCase()}
-                  </Badge>
-                </div>
-                {analysisResult && analysisResult.fields_populated.length > 0 && (
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 space-y-2">
-                    <p className="text-xs font-medium text-green-700 dark:text-green-300">
-                      Extracted {analysisResult.fields_populated.length} attribute(s)
-                      {analysisResult.confidence && (
-                        <span className="text-green-600/70 dark:text-green-400/70"> · {analysisResult.confidence} confidence</span>
-                      )}
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {analysisResult.fields_populated.map((field) => (
-                        <Badge key={field} variant="outline" className="text-[10px] bg-white dark:bg-transparent">
-                          {field.replace(/_/g, " ").replace(/\./g, " > ")}
+                )}
+
+                {/* Upload Progress */}
+                {(uploadStatus === "uploading" || uploadStatus === "processing") && (
+                  <Card>
+                    <CardContent className="py-8">
+                      <div className="flex flex-col items-center gap-3 text-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                        <div>
+                          <p className="text-sm font-medium">
+                            {uploadStatus === "uploading"
+                              ? "Uploading document..."
+                              : "Analyzing document for brand voice attributes..."}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {uploadStatus === "processing"
+                              ? "Extracting text and identifying voice patterns. This may take a moment."
+                              : "Please wait..."}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Upload Error */}
+                {uploadStatus === "error" && (
+                  <Card className="border-destructive/50">
+                    <CardContent className="py-6">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-destructive">Upload failed</p>
+                          <p className="text-xs text-muted-foreground mt-1">{uploadError}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setUploadStatus("idle")}
+                        >
+                          Try Again
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Upload Success */}
+                {uploadStatus === "success" && uploadResult && (
+                  <Card className="border-green-500/30">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CardTitle className="text-base">Document Uploaded</CardTitle>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setUploadStatus("idle");
+                            setUploadResult(null);
+                            setAnalysisResult(null);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                        <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{uploadResult.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(uploadResult.file_size)} &middot;{" "}
+                            {uploadResult.word_count.toLocaleString()} words &middot;{" "}
+                            {uploadResult.extraction_method}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          {uploadResult.file_type.toUpperCase()}
                         </Badge>
-                      ))}
-                    </div>
-                    {analysisResult.gaps.length > 0 && (
-                      <p className="text-[10px] text-muted-foreground">
-                        Still needed: {analysisResult.gaps.slice(0, 3).join(", ")}
+                      </div>
+                      {analysisResult && analysisResult.fields_populated.length > 0 && (
+                        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 space-y-2">
+                          <p className="text-xs font-medium text-green-700 dark:text-green-300">
+                            Extracted {analysisResult.fields_populated.length} attribute(s)
+                            {analysisResult.confidence && (
+                              <span className="text-green-600/70 dark:text-green-400/70"> · {analysisResult.confidence} confidence</span>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {analysisResult.fields_populated.map((field) => (
+                              <Badge key={field} variant="outline" className="text-[10px] bg-white dark:bg-transparent">
+                                {field.replace(/_/g, " ").replace(/\./g, " > ")}
+                              </Badge>
+                            ))}
+                          </div>
+                          {analysisResult.gaps.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Still needed: {analysisResult.gaps.slice(0, 3).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {uploadResult.preview && !analysisResult?.fields_populated.length && (
+                        <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto">
+                          {uploadResult.preview}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {analysisResult?.fields_populated.length
+                          ? "Brand attributes have been extracted and merged into your profile. Upload more documents or continue the conversation to fill remaining gaps."
+                          : "Document text has been extracted and stored. Continue the training conversation below to incorporate this content into your brand voice profile."}
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Upload Another Document
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Duplicate File Detected */}
+                {uploadStatus === "duplicate" && uploadResult && duplicateInfo && (
+                  <Card className="border-amber-500/30">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                          <CardTitle className="text-base">Duplicate File Detected</CardTitle>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setUploadStatus("idle");
+                            setUploadResult(null);
+                            setAnalysisResult(null);
+                            setDuplicateInfo(null);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                        <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{uploadResult.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            This file has been uploaded before. New content was analyzed and the following attributes were extracted.
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs flex-shrink-0 border-amber-300 text-amber-700">
+                          Duplicate
+                        </Badge>
+                      </div>
+                      {analysisResult && analysisResult.fields_populated.length > 0 && (
+                        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 space-y-2">
+                          <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                            Attributes to overwrite ({analysisResult.fields_populated.length})
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {analysisResult.fields_populated.map((field) => (
+                              <Badge key={field} variant="outline" className="text-[10px] bg-white dark:bg-transparent">
+                                {field.replace(/_/g, " ").replace(/\./g, " > ")}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            // Accept the overwrite — data is already merged by the API
+                            setDuplicateInfo(null);
+                            setUploadStatus("success");
+                            toast.success("Profile updated with new content");
+                          }}
+                        >
+                          Overwrite
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            setUploadStatus("idle");
+                            setUploadResult(null);
+                            setAnalysisResult(null);
+                            setDuplicateInfo(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            );
+
+            // If no assistant messages yet, show upload at top as fallback
+            if (!hasAssistantMessage) {
+              return <>{uploadUI}</>;
+            }
+
+            return displayMessages.map((message) => {
+              const showUploadAfter = !uploadInserted && message.role === "assistant";
+              if (showUploadAfter) uploadInserted = true;
+
+              return (
+                <React.Fragment key={message.id}>
+                  {/* Chat message */}
+                  <div
+                    className={cn(
+                      "flex gap-3 message-appear",
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <Bot className="w-4 h-4 text-amber-500" />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "rounded-xl px-4 py-3 max-w-[85%]",
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card border border-border"
+                      )}
+                    >
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </div>
+                    </div>
+                    {message.role === "user" && (
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
-                )}
-                {uploadResult.preview && !analysisResult?.fields_populated.length && (
-                  <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground leading-relaxed max-h-32 overflow-y-auto">
-                    {uploadResult.preview}
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {analysisResult?.fields_populated.length
-                    ? "Brand attributes have been extracted and merged into your profile. Upload more documents or continue the conversation to fill remaining gaps."
-                    : "Document text has been extracted and stored. Continue the training conversation below to incorporate this content into your brand voice profile."}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    setUploadStatus("idle");
-                    setUploadResult(null);
-                  }}
-                >
-                  Upload Another Document
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Chat messages */}
-          {displayMessages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-3 message-appear",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {message.role === "assistant" && (
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-4 h-4 text-amber-500" />
-                </div>
-              )}
-              <div
-                className={cn(
-                  "rounded-xl px-4 py-3 max-w-[85%]",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border"
-                )}
-              >
-                <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                  {message.content}
-                </div>
-              </div>
-              {message.role === "user" && (
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          ))}
+                  {/* Insert upload UI after first assistant message */}
+                  {showUploadAfter && uploadUI}
+                </React.Fragment>
+              );
+            });
+          })()}
 
           {isLoading &&
             (displayMessages.length === 0 ||

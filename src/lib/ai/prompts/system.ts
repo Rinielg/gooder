@@ -141,7 +141,19 @@ CRITICAL RULES:
         standardsSection += `${JSON.stringify(content, null, 2)}\n`;
       }
     });
-    standardsSection += "\nREMINDER: The above rules are NON-NEGOTIABLE. Check your output against every rule before delivering. If a rule says to avoid something (e.g. certain punctuation, words, or patterns), ensure ZERO instances appear in your output.\n";
+    standardsSection += `
+SPECIFIC PUNCTUATION RULE — EM DASH PROHIBITION:
+The em dash character (—, U+2014) must NEVER appear in any output. Instead, use context-appropriate punctuation:
+- For non-essential, interrupting information: use commas.
+  WRONG: "Our platform — built for teams — scales fast." → CORRECT: "Our platform, built for teams, scales fast."
+- For set-up to explanation/result: use a colon.
+  WRONG: "One thing matters — consistency." → CORRECT: "One thing matters: consistency."
+- For two complete, related sentences: use a period or semicolon.
+  WRONG: "We simplify complexity — you focus on growth." → CORRECT: "We simplify complexity. You focus on growth."
+Before delivering your response, scan for any instance of "—" (U+2014) and replace it using the rules above. Zero em dashes allowed.
+
+REMINDER: The above rules are NON-NEGOTIABLE. Check your output against every rule before delivering. If a rule says to avoid something (e.g. certain punctuation, words, or patterns), ensure ZERO instances appear in your output.
+`;
     sections.push(standardsSection);
   }
 

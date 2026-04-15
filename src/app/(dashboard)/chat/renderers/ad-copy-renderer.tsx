@@ -44,7 +44,7 @@ export function AdCopyRenderer({ channel, showTierBadge, onSave, onAdjust }: AdC
         </div>
       </div>
       {/* Actions */}
-      <OutputCardActions body={copyText} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={copyText} outputType="generic" channel={channel} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }

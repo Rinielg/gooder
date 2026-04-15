@@ -1,0 +1,13 @@
+{
+  "name": "Gooder Brand Voice",
+  "id": "gooder-brand-voice-plugin",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "src/ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["https://gooder.vercel.app"],
+    "devAllowedDomains": ["http://localhost:3000"],
+    "reasoning": "Fetches exported content from the Gooder API to create design frames"
+  }
+}

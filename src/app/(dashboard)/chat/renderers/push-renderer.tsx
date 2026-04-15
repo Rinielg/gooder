@@ -63,7 +63,7 @@ export function PushRenderer({ channel, showTierBadge, onSave, onAdjust }: PushR
         </div>
       </div>
       {/* Actions */}
-      <OutputCardActions body={copyText} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={copyText} outputType="push" channel={channel} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }

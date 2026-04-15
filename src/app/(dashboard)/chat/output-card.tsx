@@ -2,11 +2,19 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
-import { Save, Copy, Pencil, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Save, Copy, Pencil, ArrowRight, Figma, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { MemoizedMarkdown } from "./markdown-message";
+import { FigmaExportDialog } from "./figma-export-dialog";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -164,42 +172,158 @@ function CharCount({ text, limit }: { text: string; limit: number }) {
 
 // ── OutputCardActions ─────────────────────────────────────────────────────────
 
+interface FigmaExportFormat {
+  label: string;
+  width: number;
+  height: number;
+}
+
+const FIGMA_FORMATS: Record<string, FigmaExportFormat[]> = {
+  ux_journey: [
+    { label: "Mobile - 393x852", width: 393, height: 852 },
+    { label: "Desktop - 1920x1080", width: 1920, height: 1080 },
+  ],
+  email: [
+    { label: "Email - 600px width", width: 600, height: 900 },
+  ],
+  sms: [
+    { label: "Mobile - 393x852", width: 393, height: 852 },
+  ],
+  push: [
+    { label: "Mobile - 393x852", width: 393, height: 852 },
+  ],
+  whatsapp: [
+    { label: "Mobile - 393x852", width: 393, height: 852 },
+  ],
+  generic: [
+    { label: "Mobile - 393x852", width: 393, height: 852 },
+    { label: "Desktop - 1920x1080", width: 1920, height: 1080 },
+  ],
+};
+
 interface OutputCardActionsProps {
   body: string;
+  outputType?: DetectedOutputType;
+  channel?: unknown;
   onSave: () => void;
   onAdjust: () => void;
 }
 
-export function OutputCardActions({ body, onSave, onAdjust }: OutputCardActionsProps) {
+export function OutputCardActions({ body, outputType = "generic", channel, onSave, onAdjust }: OutputCardActionsProps) {
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportCode, setExportCode] = useState<string | null>(null);
+  const [exportExpiry, setExportExpiry] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
   function handleCopy() {
     navigator.clipboard.writeText(body);
     toast.success("Copied");
   }
 
+  async function handleFigmaExport(format: FigmaExportFormat) {
+    if (!channel) {
+      toast.error("Structured output required for Figma export");
+      return;
+    }
+
+    setExportLoading(true);
+    setExportError(null);
+    setExportCode(null);
+    setExportDialogOpen(true);
+
+    try {
+      const res = await fetch("/api/figma/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel,
+          dimensions: { width: format.width, height: format.height },
+          channelType: (channel as any).type ?? outputType,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create export");
+      }
+
+      setExportCode(data.code);
+      setExportExpiry(data.expiresAt);
+    } catch (err: any) {
+      setExportError(err.message || "Failed to create export");
+      toast.error("Export failed");
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  const formats = FIGMA_FORMATS[outputType] ?? FIGMA_FORMATS.generic;
+
   return (
-    <div className="flex items-center gap-2 px-4 pb-3 pt-1">
-      <button
-        onClick={onSave}
-        className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Save className="w-3.5 h-3.5" />
-        Save
-      </button>
-      <button
-        onClick={handleCopy}
-        className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Copy className="w-3.5 h-3.5" />
-        Copy
-      </button>
-      <button
-        onClick={onAdjust}
-        className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Pencil className="w-3.5 h-3.5" />
-        Adjust
-      </button>
-    </div>
+    <>
+      <div className="flex items-center gap-2 px-4 pb-3 pt-1">
+        <button
+          onClick={onSave}
+          className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Save className="w-3.5 h-3.5" />
+          Save
+        </button>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          Copy
+        </button>
+        {!!channel && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                disabled={exportLoading}
+              >
+                {exportLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Figma className="w-3.5 h-3.5" />
+                )}
+                Export for Figma
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {formats.map((format) => (
+                <DropdownMenuItem
+                  key={format.label}
+                  className="text-xs"
+                  onClick={() => handleFigmaExport(format)}
+                >
+                  {format.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <button
+          onClick={onAdjust}
+          className="flex items-center gap-1 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Adjust
+        </button>
+      </div>
+
+      <FigmaExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        code={exportCode}
+        expiresAt={exportExpiry}
+        loading={exportLoading}
+        error={exportError}
+      />
+    </>
   );
 }
 
@@ -464,7 +588,7 @@ function UxJourneyCard({ section, messageId, onSave, onAdjust }: UxJourneyCardPr
       </div>
 
       {/* Actions */}
-      <OutputCardActions body={section.body} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={section.body} outputType={detectOutputType(section.title)} onSave={onSave} onAdjust={onAdjust} />
     </div>
   );
 }
@@ -531,7 +655,7 @@ function OutputCard({
       />
 
       {/* Actions: Save, Copy, Adjust */}
-      <OutputCardActions body={section.body} onSave={onSave} onAdjust={onAdjust} />
+      <OutputCardActions body={section.body} outputType={detectOutputType(section.title)} onSave={onSave} onAdjust={onAdjust} />
     </motion.div>
   );
 }
